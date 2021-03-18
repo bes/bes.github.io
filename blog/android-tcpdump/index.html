@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    <title>Let&#x27;s dump some tcp - Android packet sniffing</title>
+    <meta name="description" content="">
+
+    <link rel="stylesheet" href="https:&#x2F;&#x2F;bes.github.io&#x2F;main.css">
+
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="https://bes.github.io/atom.xml">
+    
+
+    
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to content</a>
+    <div class="top-header">
+        <div>
+            <a href="https:&#x2F;&#x2F;bes.github.io">Domain Specific Language</a>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+<h1 class="title">
+    Let&#x27;s dump some tcp - Android packet sniffing
+</h1>
+
+    <div class="article-info">
+        
+        <div class="article-date">12 October 2016 · reading time 4 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://bes.github.io/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://bes.github.io/tags/android/">android</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/tcpdump/">tcpdump</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/wireshark/">wireshark</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/debugging/">debugging</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+<p><p>Let's hold hands while we take a dump together!</p>
+<span id="continue-reading"></span><h1 id="background">Background</h1>
+<p>If you don't want to download any old tcpdump binary file and put it all
+up in your rooted Android phone, because reasons, this guide might be for
+you.</p>
+<h1 id="goals">Goals</h1>
+<ul>
+<li>Build tcpdump</li>
+<li>Install tcpdump</li>
+<li>Run tcpdump</li>
+<li>Analyze the dump</li>
+</ul>
+<p>As a bonus, I want to explain how to do this relatively platform independently.</p>
+<h1 id="prerequisites">Prerequisites</h1>
+<p>As I said, platform independently. Here we go!</p>
+<p>Unfortunately, platform independent means installing a lot of software.
+If you are already on a relatively new version of Ubuntu, you can skip to
+&quot;Ubuntu packages&quot; below.</p>
+<h2 id="ubuntu-xenial-in-vagrant">Ubuntu Xenial in Vagrant</h2>
+<p>Start by installing <a href="https://www.vagrantup.com/downloads.html">Vagrant</a>,
+and then dump this into a file called Vagrantfile somewhere on your computer:</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">Vagrant.configure(2) do |config|
+ config.vm.box = &quot;ubuntu/xenial64&quot;
+ # Edit this line so that it fits your system configuration
+ config.vm.synced_folder &quot;/My/host/computer/folder/Downloads&quot;, &quot;/downloads&quot; 
+end
+</span></code></pre>
+<p>Now open your platform dependent terminal (cmd? xterm? iterm?) and run:</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">cd Whatever/Directory/you/chose
+vagrant up
+</span></code></pre>
+<p>Wait for a longish while, until vagrant gets its affairs into order then run:</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">vagrant ssh
+</span></code></pre>
+<p>When we have entered the ubuntu shell we can prepare the ubuntu packages.</p>
+<h2 id="ubuntu-packages">Ubuntu packages</h2>
+<p>These packages need to be installed before we continue</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">sudo apt-get install gcc-arm-linux-gnueabi
+sudo apt-get install make
+sudo apt-get install flex
+sudo apt-get install byacc
+</span></code></pre><h1 id="build-tcpdump">Build tcpdump</h1>
+<p>Let's continue in our ubuntu shell</p>
+<p>Copy this into an executable script file or just run it line by line:</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">export TCPDUMP=4.7.4
+export LIBPCAP=1.7.4
+
+wget http://www.tcpdump.org/release/tcpdump-$TCPDUMP.tar.gz
+wget http://www.tcpdump.org/release/libpcap-$LIBPCAP.tar.gz
+
+tar zxvf tcpdump-$TCPDUMP.tar.gz
+tar zxvf libpcap-$LIBPCAP.tar.gz
+export CC=arm-linux-gnueabi-gcc
+cd libpcap-$LIBPCAP
+./configure --host=arm-linux --with-pcap=linux
+make
+cd ..
+
+cd tcpdump-$TCPDUMP
+export ac_cv_linux_vers=2
+export CFLAGS=-static
+export CPPFLAGS=-static
+export LDFLAGS=-static
+
+./configure --host=arm-linux --disable-ipv6
+make
+
+arm-linux-gnueabi-strip tcpdump
+</span></code></pre>
+<p>Source: <a href="http://www.androidtcpdump.com/android-tcpdump/compile">androidtcpdump.com</a>.</p>
+<p>After you have successfully built tcpdump, copy it to the shared directory
+we set up in the Vagrantfile, or if you are on your native box copy it to
+any directory you like:</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">cp tcpdump-4.7.4/tcpdump /downloads
+</span></code></pre>
+<p>On your native machine, go to the directory that &quot;/downloads&quot; in Vagrant
+(or your local machine) points to.</p>
+<h1 id="install-tcpdump">Install tcpdump</h1>
+<p>Unfortunately, this is the point where you need something that I don't
+have time to explain: A rooted Android phone. Without root you can't
+push tcpdump, and consequently you can't run tcpdump.</p>
+<p>First let's find a directory to push to, sdcard1 is available on some
+modern Android platforms.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">adb shell ls
+[... long list of files ...]
+sdcard
+sdcard1
+[... probably more files ...]
+</span></code></pre>
+<p>As I said, I want <code>sdcard1</code>.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">adb root
+adb remount
+adb push tcpdump /sdcard1/tcpdump
+</span></code></pre><h1 id="run-tcpdump">Run tcpdump</h1>
+<p>Let's drop into adb shell</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">adb shell
+cd sdcard1
+</span></code></pre>
+<p>From here we can run tcpdump</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">tcpdump -i any -p -s 0 -w /sdcard1/capture.pcap
+tcpdump: listening on any, link-type LINUX_SLL (Linux cooked), capture size 65535 bytes
+</span></code></pre>
+<p>This will block as long as you want to do packet capture.</p>
+<p>Press Ctrl+C to stop listening. Pressing Ctrl+C might make tcpdump miss some buffered packets, so listen a while longer than you need to (do some web surfing then press Ctrl+C).</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">(Ctrl+C pressed)
+28220 packets captured
+35119 packets received by filter
+6899 packets dropped by kernel
+</span></code></pre>
+<p>Here's some info about the tcpdump options:</p>
+<ul>
+<li><code>-i any</code>: listen on any network interface</li>
+<li><code>-p</code>: disable promiscuous mode (doesn't work anyway)</li>
+<li><code>-s 0</code>: capture the entire packet</li>
+<li><code>-w</code>: write packets to a file (rather than printing to stdout)</li>
+</ul>
+<p>Drop out of the adb shell</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">exit
+</span></code></pre>
+<p>Pull the file to your local machine</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell" data-lang="shell"><span style="color:#c0c5ce;">adb pull /sdcard1/capture.pcap
+</span></code></pre><h1 id="analyze-the-dump">Analyze the dump</h1>
+<p>Download <a href="https://www.wireshark.org/">Wireshark</a> and install it.</p>
+<p>Open the file <code>capture.pcap</code> in Wireshark. Unfortunately, how to analyze it in Wireshark 
+is beyond the scope of this guide, but I'll give you some hints.</p>
+<h2 id="wireshark-basics">Wireshark basics</h2>
+<p>Load the file using File -&gt; Open.</p>
+<p>In the horizontal search bar / text field that spans the entire width of
+the application window, you can write queries for filtering the dump.</p>
+<p>A simple filter query is simply the name of the protocol you want to analyze,
+e.g. <code>http</code>.</p>
+<p>After listing all <code>http</code> packets, you can get more information for a specific 
+row / call by right clicking that row and selecting e.g. Follow &gt; HTTP Stream.</p>
+<p>After following a stream, go back to the filter list by writing <code>http</code> in
+the search field again.</p>
+<h1 id="epilogue">Epilogue</h1>
+<p>All goals (kind of) achieved!</p>
+</p>
+
+        </main>
+        <footer>
+            <p>
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> |
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> |
+                <a href="/atom.xml">Feed</a>
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

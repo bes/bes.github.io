@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    <title>Thoughts on ethical software</title>
+    <meta name="description" content="">
+
+    <link rel="stylesheet" href="https:&#x2F;&#x2F;bes.github.io&#x2F;main.css">
+
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="https://bes.github.io/atom.xml">
+    
+
+    
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to content</a>
+    <div class="top-header">
+        <div>
+            <a href="https:&#x2F;&#x2F;bes.github.io">Domain Specific Language</a>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+<h1 class="title">
+    Thoughts on ethical software
+</h1>
+
+    <div class="article-info">
+        
+        <div class="article-date">17 October 2020 · reading time 4 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://bes.github.io/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://bes.github.io/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/c/">c</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/python/">python</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/java/">java</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/cloud/">cloud</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/ethics/">ethics</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+<p><p>The major cloud actors have all stated that they will be some combination of
+<em>carbon neutral</em>, <em>carbon free</em>, and <em>carbon negative</em> at some point in the future.</p>
+<p>Not everyone is a cloud vendor! What can a software developer do <em>today</em> to improve
+the future of the planet?</p>
+<span id="continue-reading"></span><h1 id="software-in-the-cloud">Software in the cloud</h1>
+<p>I will give high level advice, to the best of my knowledge an experience, if I were
+to create new software today.</p>
+<h2 id="software-development-tools">Software development tools</h2>
+<p>Software should be easy to make and easy to deploy. But also resource efficient and correct.
+Starting a new project in a programming language
+like <code>C</code>, <code>Python</code>, or <code>Java</code> <em>today</em> is probably not a good idea.</p>
+<p><code>C</code> is fast and uses few resources, but is notoriously hard to make correct.</p>
+<p>Don't use <code>C</code>.</p>
+<p><code>Python</code> is correct in the sense of &quot;no undefined behavior&quot;, but is hard to manage
+in large codebases. It's not fast, and it doesn't exactly
+<a href="https://thenewstack.io/which-programming-languages-use-the-least-electricity/">shine</a>
+in resource usage with 75.88 times more energy usage and 2.88 times more memory used
+compared to <code>C</code> in a number of benchmarks. Python also relies heavily on C and C++
+to make e.g. math libraries faster.</p>
+<p>Don't use <code>Python</code> in anything but local scripts and prototyping.</p>
+<p><code>Java</code> is easier to maintain than <code>Python</code>, but still has <code>null</code> pointers all over the place.
+It has <em>just</em> 2 times as high power usage, but a whopping 6 times higher memory usage compared to <code>C</code>
+in the same benchmarks.</p>
+<p>Don't start any new projects that run on the <code>JVM</code>.</p>
+<p>I don't mean to pick on e.g. <code>Java</code> <em>per se</em>, but creating a somewhat complicated application
+using a popular framework like Spring Boot will require you to have access to
+at least a few hundred MiB, probably more to keep everything humming along when there
+are a lot of connections.</p>
+<p><code>Rust</code> is the only programming language that gives the level of confidence needed for
+high productivty. It's the programming language with the highest level of correctness
+in combination with super low resource usage. </p>
+<h2 id="running-software-in-the-cloud">Running software in the cloud</h2>
+<p>When creating new things to run in the cloud, they should absolutely not be deployed as always-on VMs.
+The exception is software running around-the-clock, non-stop at high loads, and software that can't be deployed any
+other way like some relational databases.</p>
+<p>An always-on service gives you slightly lower latency at a huge monetary and environmental cost.
+You are locking down several gigabytes of RAM and a number of cores, that will do literally nothing
+but take up space in a data center somewhere. Not only are you giving your cloud provider money for doing
+nothing, you are forcing them to buy, maintain, and power on more computers than necessary. Even a few
+percent fewer total computers are a lot of computers in a huge data center. </p>
+<p>Unless you have a process where starting and tearing down VMs or containers is easy, the only technology
+you should use is serverless, or ephemereal services as they should have been known. Amazon has
+AWS Lambda, Google has Cloud Run, Azure has Azure Functions. All of the mentioned products support <code>Rust</code>.</p>
+<p>Always deploy to a serverless environment unless there is a really good reason not to. 
+And only deploy to a serverless environment that supports <code>Rust</code>. </p>
+<h1 id="moral-imperative">Moral imperative</h1>
+<p>There is more to ethical software than just making code that generates as little
+waste as possible. Other human beings are also a huge part of the equation, and
+I might write about that in the future. So let me end with a Top 3 of helpful tips.</p>
+<ul>
+<li>Be kind and inclusive, especially to those that are already burdened by hardships.</li>
+<li>Use a resource efficient and correct programming language like <code>Rust</code>.</li>
+<li>Deploy services to serverless platforms. </li>
+</ul>
+</p>
+
+        </main>
+        <footer>
+            <p>
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> |
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> |
+                <a href="/atom.xml">Feed</a>
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1730 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+	<title>Domain Specific Language</title>
+	<link href="https://bes.github.io/atom.xml" rel="self" type="application/atom+xml"/>
+  <link href="https://bes.github.io"/>
+	<generator uri="https://www.getzola.org/">Zola</generator>
+	<updated>2021-03-16T00:00:00+00:00</updated>
+	<id>https://bes.github.io/atom.xml</id>
+	<entry xml:lang="en">
+		<title>An overview of the concepts in async &#x2F; await in Rust</title>
+		<published>2021-03-16T00:00:00+00:00</published>
+		<updated>2021-03-16T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/rust-async-await/" type="text/html"/>
+		<id>https://bes.github.io/blog/rust-async-await/</id>
+		<content type="html">&lt;p&gt;Async &#x2F; await in Rust promises to simplify concurrent code, and to allow a large
+number of concurrent tasks to be scheduled at the same time — with less overhead
+than the same number of OS Threads would require.&lt;&#x2F;p&gt;
+&lt;p&gt;In general, async &#x2F; await lets you write code that avoids &amp;quot;callback hell&amp;quot;, in
+favor of a linear style similar to &lt;em&gt;blocking&lt;&#x2F;em&gt; code while still letting other
+tasks progress during awaits.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;p&gt;Any minimal async &#x2F; await code in Rust is made up of at least the following
+pieces:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;An executor&lt;&#x2F;li&gt;
+&lt;li&gt;A Future with an internal state machine&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;But before we dig into those, let&#x27;s see what operating system threads are all
+about.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;operating-system-threads&quot;&gt;Operating System Threads&lt;&#x2F;h1&gt;
+&lt;p&gt;Rust has a really good concurrency story. For me it&#x27;s probably the feature I
+like the most. Rust prevents you from making a lot of mistakes, mistakes that
+are easy to make in most other imperative programming languages.&lt;&#x2F;p&gt;
+&lt;p&gt;Each new thread allocates a stack, with an OS-defined size. On linux, and other
+operating systems with virtual memory, the program won&#x27;t actually use up
+physical memory even though 1 MiB is &amp;quot;allocated&amp;quot; to the thread when it starts.
+That way you can start thousands of threads without trouble.&lt;&#x2F;p&gt;
+&lt;p&gt;The problems start when the OS needs to context switch between threads, and a
+lot of CPU time is wasted during signalling between the kernel and the program.&lt;&#x2F;p&gt;
+&lt;p&gt;Enter async &#x2F; await.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;async-await&quot;&gt;Async &#x2F; await&lt;&#x2F;h1&gt;
+&lt;p&gt;Since async &#x2F; await tasks don&#x27;t require OS signalling to context switch, the
+theory is that you can have a lot more of them, and they can make your program
+execute faster than a program with the same number of operating system threads.&lt;&#x2F;p&gt;
+&lt;p&gt;The two most important parts of the async &#x2F; await story are the executor, and
+the state machine wrapped in a future.&lt;&#x2F;p&gt;
+&lt;p&gt;A future is a computation that will finish and yield a result at some later,
+unknown time. Futures don&#x27;t have to be executed in an async &#x2F; await context,
+they are a tool that is available even in the absence of async &#x2F; await.&lt;&#x2F;p&gt;
+&lt;p&gt;An executor is the thing that takes the state machine futures and drives them to
+completion.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;executors&quot;&gt;Executors&lt;&#x2F;h2&gt;
+&lt;p&gt;Rust purposefully doesn&#x27;t include an async &#x2F; await executor in the standard
+library. There might be executors that are good for small embedded devices, and
+other executors that are good for large servers.&lt;&#x2F;p&gt;
+&lt;p&gt;For the sake of argument, I will pick the very
+popular &lt;a href=&quot;https:&#x2F;&#x2F;tokio.rs&#x2F;&quot;&gt;tokio&lt;&#x2F;a&gt; executor and describe how it works at a high
+level.&lt;&#x2F;p&gt;
+&lt;p&gt;Tokio in multi-threading mode starts as many operating system threads as there
+are cores on the given machine, on my computer that would be 8 logical cores
+which translates to 8 threads.&lt;&#x2F;p&gt;
+&lt;p&gt;The &amp;quot;low&amp;quot; number of threads means that if there are 8 currently running tasks,
+one in each thread, and all of them are blocking (e.g. stupidly
+calling &lt;code&gt;std::thread::sleep&lt;&#x2F;code&gt;), then it would not be possible for any other tasks
+to make progress and my hypothetical web server would be frozen.&lt;&#x2F;p&gt;
+&lt;p&gt;That&#x27;s why Alice Ryhl, one of the maintainers of tokio, says that a task should
+&lt;a href=&quot;https:&#x2F;&#x2F;ryhl.io&#x2F;blog&#x2F;async-what-is-blocking&#x2F;&quot;&gt;not execute for more than 100 microseconds&lt;&#x2F;a&gt;
+between two &lt;code&gt;.await&lt;&#x2F;code&gt;s.&lt;&#x2F;p&gt;
+&lt;p&gt;If a task needs to run for a longer time, then it should be spawned using e.g.
+&lt;code&gt;tokio::task::spawn_blocking&lt;&#x2F;code&gt; which will run on a separate OS thread, or just
+run the code on an os thread directly using &lt;code&gt;std::thread::spawn&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;futures-and-state-machines&quot;&gt;Futures and state machines&lt;&#x2F;h2&gt;
+&lt;p&gt;An async function looks something like this:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;my_task&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;() -&amp;gt; Option&amp;lt;String&amp;gt; {
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; more code
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;async fn&lt;&#x2F;code&gt; is just sugar for transforming the return parameter into a &lt;code&gt;Future&lt;&#x2F;code&gt;
+that is implemented as an anonymous struct that can&#x27;t be named by anyone but the
+compiler.&lt;&#x2F;p&gt;
+&lt;p&gt;The resulting high level code transform (ignoring the anonymous struct) would be
+something like:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;my_task&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;() -&amp;gt; Future&amp;lt;Output = Option&amp;lt;String&amp;gt;&amp;gt; {
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; A state machine that when driven by the executor
+    &#x2F;&#x2F; finally yields an Option&amp;lt;String&amp;gt;.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;When compiling an async function, the Rust compiler will build a state machine
+of the states the function can be in during its asynchronous life cycle. The two
+obvious states are &lt;code&gt;Initialized&lt;&#x2F;code&gt; and &lt;code&gt;Complete&lt;&#x2F;code&gt;, but between those any number of
+states for different code branches can be generated.&lt;&#x2F;p&gt;
+&lt;p&gt;As soon as you call &lt;code&gt;.await&lt;&#x2F;code&gt; on the async function, or enqueue it as a new task
+using the regular non-blocking &lt;code&gt;tokio::spawn&lt;&#x2F;code&gt; method, the state machine will
+start moving forward. In Rust&#x27;s async &#x2F; await model, this is called polling.&lt;&#x2F;p&gt;
+&lt;div class=&quot;note&quot;&gt;
+    &lt;div class=&quot;note-title&quot;&gt;Important note about Futures in Rust&lt;&#x2F;div&gt;
+    &lt;p&gt;Unlike many other programming languages that have types named &lt;code&gt;Future&lt;&#x2F;code&gt;, Rust
+does NOT start executing a &lt;code&gt;Future&lt;&#x2F;code&gt; automatically. The &lt;code&gt;Future&lt;&#x2F;code&gt; must be driven
+forward by something. The most common &amp;quot;something&amp;quot; in async &#x2F; await is the
+Executor. To start driving a future the easiest way is to &lt;code&gt;.await&lt;&#x2F;code&gt; it.
+Just do &lt;code&gt;my_task().await&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+
+&lt;&#x2F;div&gt;
+&lt;h2 id=&quot;what-about-the-stack&quot;&gt;What about the stack?&lt;&#x2F;h2&gt;
+&lt;p&gt;Regular functions require a stack. In async &#x2F; await, the Rust compiler will
+generate a state machine that is capable of storing the correct amount of data
+by encoding every possible combination of stack allocations in the form of an
+enum. Interestingly this includes the &lt;em&gt;entire&lt;&#x2F;em&gt; call graph of the async function.
+That is why just like recursive types are currently not possible without some
+hand waving in Rust, recursive &lt;code&gt;async fn&lt;&#x2F;code&gt; is not possible either - unless you
+&lt;code&gt;Box&lt;&#x2F;code&gt; the recursive call. Boxing the call places it on the heap, in essence
+&lt;a href=&quot;https:&#x2F;&#x2F;without.boats&#x2F;blog&#x2F;futures-and-segmented-stacks&#x2F;&quot;&gt;turning it to its own private little &amp;quot;stack&amp;quot; segment allocation&lt;&#x2F;a&gt;
+. &lt;&#x2F;p&gt;
+&lt;h1 id=&quot;when-to-use-async-await&quot;&gt;When to use async &#x2F; await&lt;&#x2F;h1&gt;
+&lt;p&gt;Do use async &#x2F; await when&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;You have to support many concurrent tasks.&lt;&#x2F;li&gt;
+&lt;li&gt;You have tasks that call out to non-blocking async functions, e.g. HTTP-calls.&lt;&#x2F;li&gt;
+&lt;li&gt;You have an interactive system that gets continuous input while serving output.&lt;&#x2F;li&gt;
+&lt;li&gt;You can &amp;quot;guarantee&amp;quot; that your code executes for at most 100 microseconds between &lt;code&gt;.await&lt;&#x2F;code&gt;s.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Do NOT use async &#x2F; await when&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;You need to compute something complex &#x2F; blocking as fast as possible&lt;&#x2F;li&gt;
+&lt;li&gt;You only have a few well known tasks that are independent&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;alternatives&quot;&gt;Alternatives&lt;&#x2F;h1&gt;
+&lt;p&gt;Unless you fulfill the criteria for async &#x2F; await, use something else:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Raw operating system threads &lt;code&gt;std::thread::spawn&lt;&#x2F;code&gt;.&lt;&#x2F;li&gt;
+&lt;li&gt;A data-parallelism library like &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rayon-rs&#x2F;rayon&quot;&gt;rayon&lt;&#x2F;a&gt;.&lt;&#x2F;li&gt;
+&lt;li&gt;I&#x27;m sure there are more options out there.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Strings in Rust</title>
+		<published>2021-03-14T00:00:00+00:00</published>
+		<updated>2021-03-14T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/rust-strings/" type="text/html"/>
+		<id>https://bes.github.io/blog/rust-strings/</id>
+		<content type="html">&lt;p&gt;During the last 20 years I have used a number of garbage collected and reference
+counted programming languages. All of them have a single type for representing
+strings. Rust has two types of strings that can be stored in three different
+ways.&lt;&#x2F;p&gt;
+&lt;p&gt;I want to shortly illustrate how Rust&#x27;s strings interact with the heap, with the
+stack, and with the data segment of your binary, as well as shortly explain what
+those things are.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;p&gt;Java, Swift, TypeScript, and Go all have string types that make it irrelevant if
+they&#x27;re stored on the stack or on the heap. A Java string is always heap
+allocated, while a Go string may be stack or heap allocated. The point is that
+you don&#x27;t need to know: the way you use the type doesn&#x27;t change.&lt;&#x2F;p&gt;
+&lt;p&gt;Rust doesn&#x27;t work quite that way. In general, the programmer needs to choose
+between types that store data either on the stack or on the heap. The choice
+is generally speaking a trade-off between speed and versatility.&lt;&#x2F;p&gt;
+&lt;div class=&quot;note&quot;&gt;
+    &lt;div class=&quot;note-title&quot;&gt;Scope&lt;&#x2F;div&gt;
+    &lt;p&gt;Please note that this post does not touch upon the topics of UTF8, UTF8 validity,
+and so on. Neither does it talk about lifetimes, except for &lt;code&gt;&#x27;static&lt;&#x2F;code&gt;, which is
+not explained further. This post basically glosses over everything that is not
+needed to understand &lt;code&gt;String&lt;&#x2F;code&gt; or &lt;code&gt;str&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+
+&lt;&#x2F;div&gt;
+&lt;p&gt;We need to take a small detour.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;stack-and-heap&quot;&gt;Stack and heap&lt;&#x2F;h1&gt;
+&lt;p&gt;This is a conceptual view of the stack and heap parts of program memory.
+This is probably a virtual memory if you&#x27;re on a laptop computer or physical
+memory if you&#x27;re on a small embedded hardware without an operating system.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;                  A view of program memory in a made up 16 bit computer 
+ low memory addresses   ======================================= addr[0x00F0] 
+                        |               HEAP                  |
+                        | typically grows towards higher addr |
+                        |                 |                   |
+                        |                 ˇ                   |
+                        |&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|
+                        |                 ^                   |
+                        |                 |                   |
+                        | typically grows towards lower addr  |
+                        |               STACK                 |
+ high memory addresses  ======================================= addr[0xFFFF] 
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The stack and heap memory is structured in a way that they grow towards each
+other. In my examples I use a made up 16 bit memory architecture. That means
+that pointers are 16 bits and registers are 16 bits as well.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;                        PROGRAM                      MEMORY
+use std::str;                           =====================================
+fn main() {                             |             HEAP                  |
+    &#x2F;&#x2F; A stack allocated i16            |                                   |
++-- let x: i16 = 5;                     |                                   |
+|                                       | addr[0x00F0] &amp;lt;-----+              |
+|   &#x2F;&#x2F; A heap allocated i16             | type: i16          |              |
+|   let y: Box&amp;lt;i16&amp;gt; = Box::new(5);      | value: 5           |              |
+|       |                               |                    |              |
+|       |                               |&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|
+|       |                               | addr[0xFFE0]       |              |
+|       |                               | type: Box&amp;lt;i16&amp;gt;     |              |
+|       +-------------------------------&amp;gt; value: 0x00F0 -----+              |
+|                                       |                                   |
+|                                       | addr[0xFFF0]                      |
+|                                       | type: i16                         |
++---------------------------------------&amp;gt; value: 5                          |
+                                        |             STACK                 |
+}                                       =====================================
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The program above illustrates the difference between putting something on the
+stack, which is immediately available to the function, since in some sense the
+current stack frame &lt;em&gt;is&lt;&#x2F;em&gt; the function. When something is put on the heap, we say
+that it&#x27;s &lt;em&gt;boxed&lt;&#x2F;em&gt;. In this case the &lt;code&gt;Box&lt;&#x2F;code&gt; is essentialy just a stack allocated
+struct, that internally holds a pointer to the heap, where the actual data is
+stored. Illustrated by the &lt;code&gt;-&amp;gt;&lt;&#x2F;code&gt; arrows above.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;three-types-of-string-storage&quot;&gt;Three types of string storage&lt;&#x2F;h1&gt;
+&lt;p&gt;A string in Rust can be stored in one of three ways:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;On the heap&lt;&#x2F;li&gt;
+&lt;li&gt;On the stack&lt;&#x2F;li&gt;
+&lt;li&gt;In the &lt;code&gt;data&lt;&#x2F;code&gt; segment of the application binary&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;We need one more detour.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;application-binary-segments&quot;&gt;Application binary segments&lt;&#x2F;h1&gt;
+&lt;p&gt;The segments in a binary are often illustrated like this, please note that
+this is &lt;em&gt;after&lt;&#x2F;em&gt; loading the binary file from disk into main memory: the stack
+and heap segments aren&#x27;t stored in the binary on disk.&lt;&#x2F;p&gt;
+&lt;p&gt;The &lt;code&gt;text&lt;&#x2F;code&gt; segment actually contains the compiled machine code, and the &lt;code&gt;data&lt;&#x2F;code&gt;
+segment contains application data found by the compiler while compiling.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;                                     SEGMENTS
+      low mem =============================================================
+              |                       .text                               |
+              |                contains machine code                      |
+              =============================================================
+              |                        .data                              |
+              | contains data known to the app binary at compile time     |
+              =============================================================
+ addr[0x00F0] |                         HEAP                              |
+              | contains dynamically allocated data created at run time   |
+              | * data that lives &amp;quot;much&amp;quot; longer than one function         |
+              | * data that is too big for the stack                      |
+              | * data that must live behind a pointer, i.e. unknown size |
+              |&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;
+              |                         STACK                             |
+              | contains memory allocated by functions at run time        |
+              | * data with a known size                                  |
+ addr[0xFFFF] | * data that mostly does not outlive the function itself   |
+     high mem =============================================================
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;In this case, the string &lt;code&gt;&amp;quot;abc&amp;quot;&lt;&#x2F;code&gt; has been found by the compiler and put in the
+&lt;code&gt;data&lt;&#x2F;code&gt; segment. When our function is run, the x variable points directly into
+the &lt;code&gt;data&lt;&#x2F;code&gt; segment, at the address where &lt;code&gt;&amp;quot;abc&amp;quot;&lt;&#x2F;code&gt; starts. Since the &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; also
+stores a length, the program will only read three characters when run.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;two-types-of-strings&quot;&gt;Two types of strings&lt;&#x2F;h1&gt;
+&lt;h2 id=&quot;string&quot;&gt;String&lt;&#x2F;h2&gt;
+&lt;p&gt;The first of the two types is &lt;code&gt;String&lt;&#x2F;code&gt; which is the heap allocated, growable,
+string type. It&#x27;s growable, which means that unlike Java it&#x27;s possible to change
+the string as long as there is enough room left. If there isn&#x27;t enough room, it
+will expand its size automatically.&lt;&#x2F;p&gt;
+&lt;p&gt;A &lt;code&gt;String&lt;&#x2F;code&gt; may be owned, something like &lt;code&gt;let x: String = String::from(&amp;quot;abc&amp;quot;)&lt;&#x2F;code&gt;,
+or referenced &lt;code&gt;fn takes_string_ref(x: &amp;amp;mut String)&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;String&lt;&#x2F;code&gt; is implemented as a wrapper around &lt;code&gt;Vec&amp;lt;u8&amp;gt;&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;str&quot;&gt;str&lt;&#x2F;h2&gt;
+&lt;p&gt;A &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;primitive.str.html&quot;&gt;str&lt;&#x2F;a&gt; is simple, but also
+very very complicated. You can either accept the standard explanation without
+further questioning it, or you can read my take below 👇.&lt;&#x2F;p&gt;
+&lt;p&gt;A &lt;code&gt;str&lt;&#x2F;code&gt; is a &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;nomicon&#x2F;exotic-sizes.html&quot;&gt;Dynamically Sized Type&lt;&#x2F;a&gt;.
+Furthermore, it is a primitive type, and unlike &lt;code&gt;String&lt;&#x2F;code&gt; you can&#x27;t find it in the
+standard library since it&#x27;s a compiler internal type.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;str&lt;&#x2F;code&gt; is callad a &amp;quot;string slice&amp;quot;. Unlike most other types you can NOT get an 
+instance of a raw &lt;code&gt;str&lt;&#x2F;code&gt;. It is is most often seen with  its buddy Mr. Ampersand,
+as in: &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt;. Other possibilities are &lt;code&gt;Rc&amp;lt;str&amp;gt;&lt;&#x2F;code&gt; and &lt;code&gt;Box&amp;lt;str&amp;gt;&lt;&#x2F;code&gt;. The use case
+for &lt;code&gt;Box&amp;lt;str&amp;gt;&lt;&#x2F;code&gt; &lt;a href=&quot;https:&#x2F;&#x2F;users.rust-lang.org&#x2F;t&#x2F;use-case-for-box-str-and-string&#x2F;8295&#x2F;4&quot;&gt;is that it doesn&#x27;t contain&lt;&#x2F;a&gt;
+the &lt;code&gt;capacity&lt;&#x2F;code&gt; field of &lt;code&gt;String&lt;&#x2F;code&gt;, so it takes up less memory.&lt;&#x2F;p&gt;
+&lt;p&gt;Just like a &lt;code&gt;&amp;amp;i64&lt;&#x2F;code&gt; is a reference to an actual &lt;code&gt;i64&lt;&#x2F;code&gt;, an &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; is a reference.
+But a reference to what? An &lt;code&gt;i64&lt;&#x2F;code&gt; can be stack allocated, so the &lt;code&gt;&amp;amp;i64&lt;&#x2F;code&gt; is
+a pointer to some other place in the stack. A &lt;code&gt;Box&amp;lt;i64&amp;gt;&lt;&#x2F;code&gt; is heap allocated,
+and you can get a &lt;code&gt;&amp;amp;i64&lt;&#x2F;code&gt; reference to that one, too.&lt;&#x2F;p&gt;
+&lt;p&gt;But the &lt;code&gt;&amp;amp;i64&lt;&#x2F;code&gt; isn&#x27;t just a pointer, it has an implicit size too.
+The compiler knows that since the type is 64 bits, it knows how much data to read
+when reading the pointed-to reference. But what size is an &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt;?&lt;&#x2F;p&gt;
+&lt;div class=&quot;note&quot;&gt;
+    &lt;div class=&quot;note-title&quot;&gt;Aside&lt;&#x2F;div&gt;
+    &lt;p&gt;Since the Rust 2018 edition, we need to put references to trait objects,
+which have an unknown compile-time size,
+behind the &lt;code&gt;dyn&lt;&#x2F;code&gt; keyword: &lt;code&gt;&amp;amp;dyn MyTrait&lt;&#x2F;code&gt;. That way the compiler knows to
+generate a vtable (a table of function pointers) that the runtime can use to find
+the functions of the actual underlying struct. &lt;code&gt;dyn MyTrait&lt;&#x2F;code&gt; is a Dynamically
+Sized Type too, and it also has to be pointed to by a &lt;code&gt;&amp;amp;&lt;&#x2F;code&gt; reference, or be
+boxed somehow: e.g. &lt;code&gt;Box&amp;lt;dyn MyTrait&amp;gt;&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+
+&lt;&#x2F;div&gt;
+&lt;p&gt;But what about &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt;? A pointer to a string isn&#x27;t enough, the computer must know
+how many bytes of data to read. Fortunately, it does contain the length too,
+just as a &lt;code&gt;&amp;amp;[u8]&lt;&#x2F;code&gt; reference knows how many bytes to read behind the pointer.&lt;&#x2F;p&gt;
+&lt;p&gt;I think there are nice similarities between how the lack of a known compile
+time size of a &lt;code&gt;str&lt;&#x2F;code&gt; forces the runtime code to store the runtime length together
+with the pointer to the actual data, and how references to trait objects need to
+store a pointer to a vtable to work properly. They&#x27;re both Dynamically Sized Types
+too.&lt;&#x2F;p&gt;
+&lt;p&gt;So a &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; is basically &lt;code&gt;type str { pointer: *const u8, len: usize }&lt;&#x2F;code&gt;.
+Maybe it would have been less confusing if &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; was presented another way?
+What about &lt;code&gt;&amp;amp;str[u8; ?]&lt;&#x2F;code&gt;. &lt;em&gt;No that&#x27;s terrible, never write that again.&lt;&#x2F;em&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;The way &lt;code&gt;str&lt;&#x2F;code&gt; is presented by the standard documentation leads me to believe
+that the &lt;code&gt;&amp;amp;&lt;&#x2F;code&gt; in &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; is the actual pointer, and that the &lt;code&gt;str&lt;&#x2F;code&gt; part is just
+a placeholder for &lt;code&gt;len: usize&lt;&#x2F;code&gt; and an implicit data type &lt;code&gt;u8&lt;&#x2F;code&gt;. But that&#x27;s
+maybe wrong, probably?&lt;&#x2F;p&gt;
+&lt;p&gt;My personal take is that &lt;code&gt;str&lt;&#x2F;code&gt; &lt;em&gt;could&lt;&#x2F;em&gt; have been a standard library type, or
+a &lt;code&gt;struct&lt;&#x2F;code&gt; instead, and used without it being a reference &amp;quot;&lt;code&gt;&amp;amp;&lt;&#x2F;code&gt;&amp;quot;. That way
+the pointer field could have been seen in code, and all would have been well.
+But since Rust is Rust, and &lt;code&gt;&amp;amp;&lt;&#x2F;code&gt; means shared reference, all the standard rules
+around lifetimes and sharing kick in. That results in an overall nicer experience.
+However, I find the lack of a deeper explanation or what-if explorations unsatisfying.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;three-types-of-string-storage-again&quot;&gt;Three types of string storage, again&lt;&#x2F;h1&gt;
+&lt;h2 id=&quot;heap&quot;&gt;Heap&lt;&#x2F;h2&gt;
+&lt;p&gt;The standard library &lt;code&gt;String&lt;&#x2F;code&gt; is always heap allocated, but it can interact with
+&lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; in two ways&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;Anything that takes a &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; can take a reference to a &lt;code&gt;String&lt;&#x2F;code&gt; and it will just work&lt;&#x2F;li&gt;
+&lt;li&gt;We can get a &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; sub-slice of a &lt;code&gt;String&lt;&#x2F;code&gt; by doing &lt;code&gt;&amp;amp;my_string[1..3]&lt;&#x2F;code&gt; which for
+the &lt;code&gt;String&lt;&#x2F;code&gt; &lt;code&gt;&amp;quot;abcd&amp;quot;&lt;&#x2F;code&gt; would be &lt;code&gt;&amp;quot;bcd&amp;quot;&lt;&#x2F;code&gt;.&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;Neither (1) nor (2) above need to allocate any extra memory except for the size
+of the pointer and the length.&lt;&#x2F;p&gt;
+&lt;p&gt;Here we allocate an empty &lt;code&gt;String&lt;&#x2F;code&gt; on the heap, and our handle to it, called &lt;code&gt;x&lt;&#x2F;code&gt;
+is on the stack:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;                 PROGRAM                                MEMORY
+use std::str;                            ========================================
+fn main() {                              |              HEAP                    |
+    &#x2F;&#x2F; An empty String                   | addr[0x00F0] &amp;lt;----+                  |
+    let x: String = String::new();       | type: *const u8   |                  |
+        |                                | value: [empty]    |                  |
+        |                                |                   |                  |
+        |                                |&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|
+        |                                |                   |                  |
+        |                                | addr[0xFFF0]      |                  |
+        |                                | type: String      |                  |
+        +------------------------------- &amp;gt; value: 0x00F0 + len: 0 + capacity: 0 |
+                                         |              STACK                   |
+}                                        ========================================
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;There&#x27;s a bit of lying going on above, since String itself doesn&#x27;t have the pointer,
+it&#x27;s a wrapper around &lt;code&gt;Vec&amp;lt;u8&amp;gt;&lt;&#x2F;code&gt;, and the &lt;code&gt;Vec&lt;&#x2F;code&gt; has the actual pointer.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;data-segment&quot;&gt;Data segment&lt;&#x2F;h2&gt;
+&lt;p&gt;As previously mentioned, all string literals, e.g. &lt;code&gt;let x = &amp;quot;hello&amp;quot;&lt;&#x2F;code&gt;, will have
+the type &lt;code&gt;&amp;amp;&#x27;static str&lt;&#x2F;code&gt;, and they are stored in the &lt;code&gt;data&lt;&#x2F;code&gt; segment of the application
+binary.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;              PROGRAM                                     SEGMENTS
+                                            ======================================= low mem
+fn main() {                                 |              .text                  |
+    &#x2F;&#x2F; A str &amp;quot;string&amp;quot; with the value &amp;quot;abc&amp;quot;  =======================================
+    &#x2F;&#x2F; which is stored in the data segment  |              .data                  |
+    let x: &amp;amp;&amp;#39;static str = &amp;quot;abc&amp;quot;; ----+      | addr[0x0008] &amp;lt;----------+           |
+        |                            |      | type: *const u8         |           |
+        |                            +------&amp;gt; value: &amp;quot;abc&amp;quot;            |           |
+        |                                   ==========================|============
+        |                                   |               HEAP      |           |
+        |                                   |                         |           | addr[0x00F0]
+        |                                   |                         |           |
+        |                                   |&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|
+        |                                   |                         |           |
+        |                                   |                         |           |
+        |                                   |                         |           |
+        |                                   | addr[0xFFF0]            |           |
+        | &#x2F;&#x2F; x is stored on the stack       | type: &amp;amp;&amp;#39;static str      |           | addr[0xFFFF]
+        +-----------------------------------&amp;gt; value: 0x0008 + len: 3 -+           |
+         &#x2F;&#x2F; and contains a ptr and a len    |               STACK                 |
+}                                           ======================================= high mem
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;stack&quot;&gt;Stack&lt;&#x2F;h2&gt;
+&lt;p&gt;It&#x27;s possible to store string data on the stack, one way would be to create an
+array of &lt;code&gt;u8&lt;&#x2F;code&gt; and then get a &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; slice pointing into that array.&lt;&#x2F;p&gt;
+&lt;p&gt;This is stolen from the &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;str&#x2F;fn.from_utf8.html&quot;&gt;str documentation&lt;&#x2F;a&gt;:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;                        PROGRAM                                      MEMORY
+use std::str;                                           =================================
+fn main() {                                             | HEAP (unused in this example) |
+                                                        |&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;&#x2F;|
+    let sparkle_heart: [u8; 4] = [240, 159, 146, 150];  | addr[0xFFE0] &amp;lt;----------+     |
+                                  |                     | type: *const u8         |     |
+                                  +---------------------&amp;gt; value: [bytes...]       |     |
+                                                        |                         |     |
++-- let sparkle_heart = str::from_utf8(&amp;amp;sparkle_heart)  | addr[0xFFF0]            |     |
+|       .unwrap();                                      | type: &amp;amp;str              |     |
+|-------------------------------------------------------&amp;gt; value: 0xFFE0 + len: 4 -+     |
+                                                        |             STACK             |
+}                                                       =================================
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;stack-strings-and-hybrid-strings&quot;&gt;Stack strings and Hybrid strings&lt;&#x2F;h2&gt;
+&lt;p&gt;For stack allocated strings, or for hybrid stack&#x2F;heap implementations, there are
+a number of crates available. Use your favorite search engine to find them.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;a-helpful-tip&quot;&gt;A helpful tip&lt;&#x2F;h1&gt;
+&lt;p&gt;The reference variety of &lt;code&gt;String&lt;&#x2F;code&gt;: &lt;code&gt;&amp;amp;String&lt;&#x2F;code&gt;, should be avoided in favor of &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt;,
+unless there is a need for a &amp;quot;String out parameter&amp;quot;. A &amp;quot;String out parameter&amp;quot;, or
+&lt;code&gt;&amp;amp;mut String&lt;&#x2F;code&gt;, can be used when a currently owned String needs to be updated by
+a receiving function, without having to move it into, and then out of, that function.&lt;&#x2F;p&gt;
+&lt;p&gt;In short:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Use &lt;code&gt;String&lt;&#x2F;code&gt; for strings you need to change, or where a &lt;code&gt;String&lt;&#x2F;code&gt; is a required parameter.&lt;&#x2F;li&gt;
+&lt;li&gt;Use &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; as function parameters when you need to read string data, since all types of
+strings can be cheaply turned into &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt;.&lt;&#x2F;li&gt;
+&lt;li&gt;Use &lt;code&gt;&amp;amp;mut String&lt;&#x2F;code&gt; only when you need a &amp;quot;String out parameter&amp;quot;.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;final-words&quot;&gt;Final words&lt;&#x2F;h1&gt;
+&lt;p&gt;We learned that&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;String&lt;&#x2F;code&gt; is for growable strings on the heap.&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;[u8; N]&lt;&#x2F;code&gt; (byte array) is for strings on the stack.&lt;&#x2F;li&gt;
+&lt;li&gt;string literals &lt;code&gt;&amp;quot;abc&amp;quot;&lt;&#x2F;code&gt; are strings in the &lt;code&gt;data&lt;&#x2F;code&gt; segment.&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; is for peeking into string slices allocated on the
+heap, in the &lt;code&gt;data&lt;&#x2F;code&gt; segment, or on the stack.&lt;&#x2F;li&gt;
+&lt;li&gt;How &lt;code&gt;&amp;amp;str&lt;&#x2F;code&gt; points into the different types of string storage.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>The myth of the Senior Developer</title>
+		<published>2020-10-27T00:00:00+00:00</published>
+		<updated>2020-10-27T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/the-myth-of-the-senior-engineer/" type="text/html"/>
+		<id>https://bes.github.io/blog/the-myth-of-the-senior-engineer/</id>
+		<content type="html">&lt;p&gt;I have been thinking lately about what Senior Developers
+(Senior Engineers, Software Architects, etc.)
+contribute to an organization.&lt;&#x2F;p&gt;
+&lt;p&gt;There is a long list of attributes a senior developer can have,
+two of them are—&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Performance and output—&lt;em&gt;much better than junior developers&lt;&#x2F;em&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;Level of creativity—&lt;em&gt;constantly trying out new things&lt;&#x2F;em&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;I want to examine this dogma, and perhaps shine a light of self-criticism on it.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;p&gt;I spent almost ten years at a large mobile phone company, and somewhere along
+the line someone, if I may self-deprecate for a while, mistook confidence for
+competence.&lt;&#x2F;p&gt;
+&lt;p&gt;Staying in one place a long time let me absorb a lot of different competences
+and that, perhaps, is one definition of seniority. To know a lot of different
+things. Seniority is perhaps also the willingness to stop and help others,
+and hopefully there is something that is being contributed. If nothing else,
+a little human warmth may have been exchanged.&lt;&#x2F;p&gt;
+&lt;p&gt;But I want to self-loathe.&lt;&#x2F;p&gt;
+&lt;p&gt;What are the nefarious, dirty things, that keep seniors climbing on top of
+juniors—boots in their faces, grasping upwards but constantly falling short?&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;the-senior-edge&quot;&gt;The senior edge&lt;&#x2F;h1&gt;
+&lt;p&gt;At my current job I have colleagues of varying seniority. Some of us have
+been working together for five years, taking this company from startup status
+with one customer, to having hundreds of customers.&lt;&#x2F;p&gt;
+&lt;p&gt;I have been working with large parts of our codebase since it was just a little
+puppy, a few lines long. Now the code is full-grown and spans a few hundred thousand
+lines of code.&lt;&#x2F;p&gt;
+&lt;p&gt;I am intimate with half, or at least one third of all the code. It is
+very hard for someone completely new to get a high level overview.
+Every new task is an overwhelming campaign into the unknown.
+I have a very good understanding of everything from small details up to the overall
+architecture. The juniors are spending their time reading completely new code every time
+they get a new task.&lt;&#x2F;p&gt;
+&lt;p&gt;I can probably spend hours talking about a single application and even then
+I probably wouldn&#x27;t touch on all the quirks, good design choices, bad design choices,
+or the ever growing list of issues.&lt;&#x2F;p&gt;
+&lt;p&gt;It&#x27;s easy to be creative when I&#x27;m not spending most of my time trying to understand
+what the code I&#x27;m looking at is doing. I already know, so I can just skip straight
+into my creative mode and start adding to an ever expanding advantage.&lt;&#x2F;p&gt;
+&lt;p&gt;It&#x27;s easy to be senior because I know most of the things already. It&#x27;s easy to be
+senior because I review most of the code on its way in.&lt;&#x2F;p&gt;
+&lt;p&gt;That is the senior edge.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;the-junior-perspective&quot;&gt;The junior perspective&lt;&#x2F;h1&gt;
+&lt;p&gt;Even if I had the time, and even if I wanted to spend all my time, I would not
+be able to explain everything. It took me five years to get here, how would I
+be able to fully transfer that knowledge efficiently? &lt;&#x2F;p&gt;
+&lt;p&gt;That&#x27;s why it&#x27;s so hard to be the junior.&lt;&#x2F;p&gt;
+&lt;p&gt;What about &lt;em&gt;off the cuff&lt;&#x2F;em&gt; comments? Things that I didn&#x27;t mean as hurtful
+or demeaning, but definitely came off that way? I know I&#x27;ve said some really
+dumb things, but not because I remember myself saying them. I&#x27;m sure
+people do remember what &lt;em&gt;I&lt;&#x2F;em&gt; said, though. No it&#x27;s because I remember what people said
+to me when I was a junior developer.&lt;&#x2F;p&gt;
+&lt;p&gt;Things like—&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;&amp;quot;How hard can it be?&amp;quot;&lt;&#x2F;em&gt; &lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;People actually say this unironically.&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;&amp;quot;That&#x27;s easy&amp;quot;&lt;&#x2F;em&gt;&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;Not a good look. Someone without my domain knowledge
+will probably stare into their screen for several hours before asking
+for help. Why did they waste all that time? Because I said something
+hurtful.&lt;&#x2F;p&gt;
+&lt;p&gt;I don&#x27;t want it to be that way.&lt;&#x2F;p&gt;
+&lt;p&gt;There are no 10x engineers. That myth is already busted.
+Most probably it&#x27;s just someone who started early and wrote a lot of code.&lt;&#x2F;p&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>A four-hour rabbit hole into (mostly) generated Rust code</title>
+		<published>2020-10-25T00:00:00+00:00</published>
+		<updated>2020-10-25T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/the-four-hour-rabbit-hole/" type="text/html"/>
+		<id>https://bes.github.io/blog/the-four-hour-rabbit-hole/</id>
+		<content type="html">&lt;p&gt;There are no official Rust libraries for Google APIs available yet,
+but there are some (mostly) auto generated ones that are fine to use
+albeit a bit verbose.&lt;&#x2F;p&gt;
+&lt;p&gt;I&#x27;ve previously used &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;google-apis-rs&quot;&gt;google-apis-rs&lt;&#x2F;a&gt;
+successfully when I needed to read &lt;a href=&quot;https:&#x2F;&#x2F;cloud.google.com&#x2F;secret-manager&quot;&gt;Secret Manager&lt;&#x2F;a&gt;
+secrets for a side project.&lt;&#x2F;p&gt;
+&lt;p&gt;Hot on the heels of &lt;a href=&quot;https:&#x2F;&#x2F;bes.github.io&#x2F;blog&#x2F;thoughts-on-ethical-software&#x2F;&quot;&gt;Thoughts on ethical software&lt;&#x2F;a&gt;
+I decided to convert the same project from using &lt;code&gt;MySQL&lt;&#x2F;code&gt; to the snazzily named
+&lt;a href=&quot;https:&#x2F;&#x2F;cloud.google.com&#x2F;datastore&#x2F;docs&quot;&gt;Firestore in Datastore mode&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Let&#x27;s go down the rabbit 🐇 hole 🕳.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;&lt;h1 id=&quot;an-error-appears&quot;&gt;An error appears&lt;&#x2F;h1&gt;
+&lt;p&gt;His terminal cursor blinked with the cold determination of an experienced murderer,
+many years since his first kill, but never caught.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell script&quot; data-lang=&quot;shell script&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;Reqwest Error: error decoding response body: invalid base64 input at line 3 column 1
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;em&gt;Just kidding&lt;&#x2F;em&gt;. This is not a murder story. I&#x27;m not kidding about the error though.&lt;&#x2F;p&gt;
+&lt;p&gt;Some code to start things off.&lt;&#x2F;p&gt;
+&lt;p&gt;Some of the code below, like &lt;code&gt;crate::accesstoken::GoogleToken&lt;&#x2F;code&gt; isn&#x27;t available publicly,
+but it&#x27;s based on &lt;code&gt;gcp_auth = &amp;quot;0.1.4&amp;quot;&lt;&#x2F;code&gt;. If you want, contact me, and I&#x27;ll probably
+send you the code. &lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;[dependencies]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;google-datastore1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;= { &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;git &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;google-apis-rs&#x2F;generated&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot; }
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;use crate&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;::accesstoken::GoogleToken;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;use &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;eyre::{Result, WrapErr};
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;use &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;google_datastore1::Client;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;use &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;google_datastore1::schemas::{BeginTransactionRequest, BeginTransactionResponse};
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;datastore_transaction_test&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;() -&amp;gt; Result&amp;lt;()&amp;gt; {
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; gtoken = GoogleToken::get_token().&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;wrap_err_with&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(|| &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;Could not get google token&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;)?;
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; client = Client::new(gtoken);
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; projects = client.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;projects&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;();
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; builder = projects.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;begin_transaction&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(
+        BeginTransactionRequest {
+            transaction_options: None,
+        },
+        &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;some-google-cloud-project-name&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;,
+    );
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; transaction: BeginTransactionResponse = builder.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;execute&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;()?;
+
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; ...
+
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;Ok(())
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h1 id=&quot;where-to-start&quot;&gt;Where to start?&lt;&#x2F;h1&gt;
+&lt;p&gt;Soul smashing. I only have a few precious hours per day to code, and now I have
+a decision to make. Do I give up? Do I find another library?&lt;&#x2F;p&gt;
+&lt;p&gt;Resolve and dedication is the name of the game. Plus most of the time it&#x27;s something
+silly like making the wrong assumptions about the library I&#x27;m trying to use. E.g.
+is my authentication token correct? Did I give the wrong project name?&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;is-the-request-good&quot;&gt;Is the request good?&lt;&#x2F;h1&gt;
+&lt;p&gt;I&#x27;m using CLion which includes Rust debugging. The first thing I want to know is,
+am I making an error in my request?&lt;&#x2F;p&gt;
+&lt;p&gt;Let&#x27;s step into &lt;code&gt;builder.execute()&lt;&#x2F;code&gt; and see what it is hiding.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;execute&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;T&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;) -&amp;gt; Result&amp;lt;T, crate::Error&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;where
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;    T: ::serde::de::DeserializeOwned + ::google_field_selector::FieldSelector,
+{
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; fields = ::google_field_selector::to_string::&amp;lt;T&amp;gt;();
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; fields: Option&amp;lt;String&amp;gt; = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;if&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; fields.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;is_empty&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;() {
+        None
+    } &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;else &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;{
+        Some(fields)
+    };
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;execute_with_fields&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(fields)
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;It&#x27;s just collecting some parameters and calling &lt;code&gt;execute_with_fields&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;execute_with_fields&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;T, F&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fields&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: Option&amp;lt;F&amp;gt;) -&amp;gt; Result&amp;lt;T, crate::Error&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;where
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;    T: ::serde::de::DeserializeOwned,
+    F: Into&amp;lt;String&amp;gt;,
+{
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.fields = fields.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;map&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(Into::into);
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;_execute&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;()
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Same story, let&#x27;s go into &lt;code&gt;_execute&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;_execute&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;T&amp;gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;) -&amp;gt; Result&amp;lt;T, crate::Error&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;where
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;    T: ::serde::de::DeserializeOwned,
+{
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; req = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;_request&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;_path&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;())?;
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; req = req.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;json&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.request);
+    Ok(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;crate&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;::error_from_response(req.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;send&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;()?)?.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;json&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;()?)
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;crate::error_from_response(req.send()?)?.json()?&lt;&#x2F;code&gt; looks interesting!
+&lt;code&gt;.json()&lt;&#x2F;code&gt; specifically sound like something that takes a string (or something)
+and gives us json (of type &lt;code&gt;::serde::de::DeserializeOwned&lt;&#x2F;code&gt;).&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;.json()&lt;&#x2F;code&gt; takes us out of the &lt;code&gt;google-datastore1&lt;&#x2F;code&gt; crate and into &lt;code&gt;reqwest&lt;&#x2F;code&gt;, and the method
+looks like this:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;json&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;T: DeserializeOwned&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;) -&amp;gt; crate::Result&amp;lt;T&amp;gt; {
+    wait::timeout(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.inner.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;json&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(), &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.timeout).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;map_err&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;e&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;match&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; e {
+        wait::Waited::TimedOut(e) =&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;crate&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;::error::decode(e),
+        wait::Waited::Inner(e) =&amp;gt; e,
+    })
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Cool. &lt;code&gt;self.inner.json()&lt;&#x2F;code&gt; looks juicy. Let&#x27;s dig into that.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;json&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;T: DeserializeOwned&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;) -&amp;gt; crate::Result&amp;lt;T&amp;gt; {
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; full = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;bytes&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;().await?;
+
+    serde_json::from_slice(&amp;amp;full).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;map_err&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;crate&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;::error::decode)
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;This 👆 is the sixth code block in this blog post, and let&#x27;s be honest
+you probably didn&#x27;t read any of them. But this is where the fun starts,
+so pay attention. &lt;code&gt;self.bytes()&lt;&#x2F;code&gt; returns a type called &lt;code&gt;Result&amp;lt;Bytes&amp;gt;&lt;&#x2F;code&gt;
+which I&#x27;m guessing are going to be bytes :).&lt;&#x2F;p&gt;
+&lt;p&gt;What I want to do in this section is to see if the response &lt;em&gt;from&lt;&#x2F;em&gt;
+Cloud Datastore is malformed. I want to know where that error message
+is coming from, and so far I haven&#x27;t got a clue.&lt;&#x2F;p&gt;
+&lt;p&gt;I&#x27;ll place a breakpoint on the last line in the method using CLion&#x27;s
+built in LLVM debugger.&lt;&#x2F;p&gt;
+&lt;p&gt;Now the first time the breakpoint is hit, in my case it&#x27;s just my &lt;code&gt;GoogleToken&lt;&#x2F;code&gt;
+being deserialized. I press &lt;code&gt;Resume Program&lt;&#x2F;code&gt; and wait for the second one.&lt;&#x2F;p&gt;
+&lt;a class=&quot;image&quot; href=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;breakpoint_1.png&quot;&gt;
+    &lt;img src=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;breakpoint_1.png&quot; style=&quot;width: 100%; object-fit: cover;&quot; &#x2F;&gt;
+&lt;&#x2F;a&gt;
+&lt;p&gt;I just want to know what&#x27;s in the &lt;code&gt;&amp;amp;full&lt;&#x2F;code&gt; reference. I could do that in
+a couple of ways. The first one is to just change the code right there
+to print out &lt;code&gt;&amp;amp;full&lt;&#x2F;code&gt; on the command line. Let&#x27;s try that.&lt;&#x2F;p&gt;
+&lt;a class=&quot;image&quot; href=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;protected_file_question.png&quot;&gt;
+    &lt;img src=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;protected_file_question.png&quot; style=&quot;width: 100%; object-fit: cover;&quot; &#x2F;&gt;
+&lt;&#x2F;a&gt;
+&lt;p&gt;Now the method looks like this&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;json&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;T: DeserializeOwned&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;) -&amp;gt; crate::Result&amp;lt;T&amp;gt; {
+        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; full = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;bytes&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;().await?;
+
+        println!(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;{:#?}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;, String::from_utf8(full.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;to_vec&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;()));
+        serde_json::from_slice(&amp;amp;full).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;map_err&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;crate&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;::error::decode)
+    }
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Unfortunately CLion doesn&#x27;t pick up on this change automatically,
+I have to run &lt;code&gt;cargo clean&lt;&#x2F;code&gt; first. If it compiles, and I want to
+make a change, I have to run &lt;code&gt;cargo clean&lt;&#x2F;code&gt; again. &lt;em&gt;Maybe there&#x27;s a better way&lt;&#x2F;em&gt;?
+I wonder while waiting for everything to compile.
+I wait. For a long time. Finally my terminal comes to life.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell script&quot; data-lang=&quot;shell script&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;{\  \&amp;quot;transaction\&amp;quot;: \&amp;quot;Ed4MD3Hb1vERIlkA3ModsqJ&#x2F;tO7aMMgajDXq&amp;lt;MORE_STUFF...&amp;gt;==\&amp;quot;\n}\n&amp;quot;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Great! The API call works. But before continuing, I have to know - can this
+be made easier? Fortunately, it can! We can use the &lt;code&gt;Memory View&lt;&#x2F;code&gt; feature in
+CLion. Just expand &lt;code&gt;full&lt;&#x2F;code&gt; in the &lt;code&gt;Variables&lt;&#x2F;code&gt; view, then right click on &lt;code&gt;ptr&lt;&#x2F;code&gt;
+and select &lt;code&gt;Show in Memory View&lt;&#x2F;code&gt;:&lt;&#x2F;p&gt;
+&lt;a class=&quot;image&quot; href=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;breakpoint_2.png&quot;&gt;
+    &lt;img src=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;breakpoint_2.png&quot; style=&quot;width: 100%; object-fit: cover;&quot; &#x2F;&gt;
+&lt;&#x2F;a&gt;
+&lt;p&gt;And there it is, hiding in plain sight, my &lt;code&gt;transaction&lt;&#x2F;code&gt; in glorious
+hexadecimal but also in inglorious text.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;where-is-the-error&quot;&gt;Where is the error?&lt;&#x2F;h1&gt;
+&lt;p&gt;I know that the value in the &lt;code&gt;json()&lt;&#x2F;code&gt; method should be at least readable
+by &lt;code&gt;serde&lt;&#x2F;code&gt;, and I think that &lt;code&gt;transaction&lt;&#x2F;code&gt; looks like valid Base64, at least
+it&#x27;s got the signature Base64 &lt;code&gt;==&lt;&#x2F;code&gt; padding on the end.&lt;&#x2F;p&gt;
+&lt;p&gt;I run the Base64 through my trusty terminal&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell script&quot; data-lang=&quot;shell script&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;test% pbpaste | base64 -D
+����O_a�0ۉΗ��j�y�ϵ��\]�Ϧ�;A�
+`@@Yc�ԏ�Y�f�C��с(6���iR��%
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Looks legit :). What happens if I throw in an invalid character like &lt;code&gt;*&lt;&#x2F;code&gt;?&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell script&quot; data-lang=&quot;shell script&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;test% pbpaste | base64 -D
+Invalid character in input stream.
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;My &lt;code&gt;transaction&lt;&#x2F;code&gt; is probably OK.&lt;&#x2F;p&gt;
+&lt;p&gt;I continue stepping into &lt;code&gt;serde_json::from_slice&lt;&#x2F;code&gt; and from there into
+&lt;code&gt;from_trait(read::SliceRead::new(v))&lt;&#x2F;code&gt;. It&#x27;s just generic methods and macros
+all the way down, and honestly not many things to use to make sense of what
+might be happening.&lt;&#x2F;p&gt;
+&lt;p&gt;I know that &lt;code&gt;serde&lt;&#x2F;code&gt; is trying to deserialize JSON and I know that Rust
+can pick implementations based on the return value of a method. I
+probably need to go back to where it all started.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; transaction: BeginTransactionResponse = builder.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;execute&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;()?;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Let&#x27;s see what &lt;code&gt;BeginTransactionResponse&lt;&#x2F;code&gt; is hiding!&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub struct &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;BeginTransactionResponse {
+    #[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;doc &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;= &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;The transaction identifier (always present).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;]
+    #[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;serde&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(
+        rename = &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;transaction&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;,
+        default,
+        skip_serializing_if = &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;std::option::Option::is_none&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    )]
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;transaction&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: ::std::option::Option&amp;lt;::google_api_bytes::Bytes&amp;gt;,
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;What&#x27;s this &lt;code&gt;Bytes&lt;&#x2F;code&gt; thing? Go to Declaration, please.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;#[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;derive&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub struct &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;Bytes(pub Vec&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;u8&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;It&#x27;s a newtype over &lt;code&gt;Vec&amp;lt;u8&amp;gt;&lt;&#x2F;code&gt;. Clicking the gutter icon (green &amp;quot;I&amp;quot;) might help.&lt;&#x2F;p&gt;
+&lt;a class=&quot;image&quot; href=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;gutter_impls.png&quot;&gt;
+    &lt;img src=&quot;&amp;#x2F;images&amp;#x2F;blog&amp;#x2F;2020-10-25&amp;#x2F;gutter_impls.png&quot; style=&quot;width: 100%; object-fit: cover;&quot; &#x2F;&gt;
+&lt;&#x2F;a&gt;
+&lt;p&gt;There&#x27;s an implementation for &lt;code&gt;Deserialize&amp;lt;&#x27;de&amp;gt; for Bytes&lt;&#x2F;code&gt;. Let&#x27;s check it out.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;impl&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;&amp;#39;de&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;gt; Deserialize&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;&amp;#39;de&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;Bytes {
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;deserialize&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;lt;D&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;deserializer&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: D) -&amp;gt; ::std::result::Result&amp;lt;Bytes, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;D::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;Error&amp;gt;
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;where
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;        D: Deserializer&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;&amp;#39;de&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;gt;,
+    {
+        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; encoded = String::deserialize(deserializer)?;
+        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; decoded = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;BASE64_CFG
+            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;decode&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(&amp;amp;encoded)
+            .&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;map_err&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(|_| ::serde::de::Error::custom(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;invalid base64 input&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;))?;
+        Ok(Bytes(decoded))
+    }
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;That error looks familiar. If you didn&#x27;t already guess it, I&#x27;m looking straight at
+that &lt;code&gt;BASE64_CFG&lt;&#x2F;code&gt; and wondering what that does.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;use &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;radix64::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;URL_SAFE &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;as &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;BASE64_CFG&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And &lt;code&gt;radix64::URL_SAFE&lt;&#x2F;code&gt; is...&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F;&#x2F; Encode and Decode using the URL safe characer set with padding.
+&#x2F;&#x2F;&#x2F;
+&#x2F;&#x2F;&#x2F; See [RFC 4648](https:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc4648#section-5)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;URL_SAFE&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: UrlSafe = UrlSafe;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Is it possible that some Google APIs use UrlSafe Base64 encoding, and
+others don&#x27;t? It&#x27;s impossible to tell from the documentation. Some
+APIs do seem to specifically say &amp;quot;Use URL safe Base64&amp;quot;, but most don&#x27;t.&lt;&#x2F;p&gt;
+&lt;p&gt;I once again decide to edit a file. Yeehaw. Change &lt;code&gt;use radix64::URL_SAFE as BASE64_CFG;&lt;&#x2F;code&gt;
+to &lt;code&gt;use radix64::STD as BASE64_CFG;&lt;&#x2F;code&gt;. Recompile.&lt;&#x2F;p&gt;
+&lt;p&gt;It works! No more errors.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;be-a-good-oss-citizen&quot;&gt;Be a good OSS citizen&lt;&#x2F;h1&gt;
+&lt;p&gt;The least I can do is to report the issue. Hopefully the repository is
+still maintained, and hopefully the maintainers appreciate a bug report.
+Said and done, the bug report is here.
+&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;google-apis-rs&#x2F;generated&#x2F;issues&#x2F;3&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;google-apis-rs&#x2F;generated&#x2F;issues&#x2F;3&lt;&#x2F;a&gt;.
+And a fair bit shorter than this blog post.&lt;&#x2F;p&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Thoughts on ethical software</title>
+		<published>2020-10-17T00:00:00+00:00</published>
+		<updated>2020-10-17T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/thoughts-on-ethical-software/" type="text/html"/>
+		<id>https://bes.github.io/blog/thoughts-on-ethical-software/</id>
+		<content type="html">&lt;p&gt;The major cloud actors have all stated that they will be some combination of
+&lt;em&gt;carbon neutral&lt;&#x2F;em&gt;, &lt;em&gt;carbon free&lt;&#x2F;em&gt;, and &lt;em&gt;carbon negative&lt;&#x2F;em&gt; at some point in the future.&lt;&#x2F;p&gt;
+&lt;p&gt;Not everyone is a cloud vendor! What can a software developer do &lt;em&gt;today&lt;&#x2F;em&gt; to improve
+the future of the planet?&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;&lt;h1 id=&quot;software-in-the-cloud&quot;&gt;Software in the cloud&lt;&#x2F;h1&gt;
+&lt;p&gt;I will give high level advice, to the best of my knowledge an experience, if I were
+to create new software today.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;software-development-tools&quot;&gt;Software development tools&lt;&#x2F;h2&gt;
+&lt;p&gt;Software should be easy to make and easy to deploy. But also resource efficient and correct.
+Starting a new project in a programming language
+like &lt;code&gt;C&lt;&#x2F;code&gt;, &lt;code&gt;Python&lt;&#x2F;code&gt;, or &lt;code&gt;Java&lt;&#x2F;code&gt; &lt;em&gt;today&lt;&#x2F;em&gt; is probably not a good idea.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;C&lt;&#x2F;code&gt; is fast and uses few resources, but is notoriously hard to make correct.&lt;&#x2F;p&gt;
+&lt;p&gt;Don&#x27;t use &lt;code&gt;C&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;Python&lt;&#x2F;code&gt; is correct in the sense of &amp;quot;no undefined behavior&amp;quot;, but is hard to manage
+in large codebases. It&#x27;s not fast, and it doesn&#x27;t exactly
+&lt;a href=&quot;https:&#x2F;&#x2F;thenewstack.io&#x2F;which-programming-languages-use-the-least-electricity&#x2F;&quot;&gt;shine&lt;&#x2F;a&gt;
+in resource usage with 75.88 times more energy usage and 2.88 times more memory used
+compared to &lt;code&gt;C&lt;&#x2F;code&gt; in a number of benchmarks. Python also relies heavily on C and C++
+to make e.g. math libraries faster.&lt;&#x2F;p&gt;
+&lt;p&gt;Don&#x27;t use &lt;code&gt;Python&lt;&#x2F;code&gt; in anything but local scripts and prototyping.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;Java&lt;&#x2F;code&gt; is easier to maintain than &lt;code&gt;Python&lt;&#x2F;code&gt;, but still has &lt;code&gt;null&lt;&#x2F;code&gt; pointers all over the place.
+It has &lt;em&gt;just&lt;&#x2F;em&gt; 2 times as high power usage, but a whopping 6 times higher memory usage compared to &lt;code&gt;C&lt;&#x2F;code&gt;
+in the same benchmarks.&lt;&#x2F;p&gt;
+&lt;p&gt;Don&#x27;t start any new projects that run on the &lt;code&gt;JVM&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;I don&#x27;t mean to pick on e.g. &lt;code&gt;Java&lt;&#x2F;code&gt; &lt;em&gt;per se&lt;&#x2F;em&gt;, but creating a somewhat complicated application
+using a popular framework like Spring Boot will require you to have access to
+at least a few hundred MiB, probably more to keep everything humming along when there
+are a lot of connections.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;Rust&lt;&#x2F;code&gt; is the only programming language that gives the level of confidence needed for
+high productivty. It&#x27;s the programming language with the highest level of correctness
+in combination with super low resource usage. &lt;&#x2F;p&gt;
+&lt;h2 id=&quot;running-software-in-the-cloud&quot;&gt;Running software in the cloud&lt;&#x2F;h2&gt;
+&lt;p&gt;When creating new things to run in the cloud, they should absolutely not be deployed as always-on VMs.
+The exception is software running around-the-clock, non-stop at high loads, and software that can&#x27;t be deployed any
+other way like some relational databases.&lt;&#x2F;p&gt;
+&lt;p&gt;An always-on service gives you slightly lower latency at a huge monetary and environmental cost.
+You are locking down several gigabytes of RAM and a number of cores, that will do literally nothing
+but take up space in a data center somewhere. Not only are you giving your cloud provider money for doing
+nothing, you are forcing them to buy, maintain, and power on more computers than necessary. Even a few
+percent fewer total computers are a lot of computers in a huge data center. &lt;&#x2F;p&gt;
+&lt;p&gt;Unless you have a process where starting and tearing down VMs or containers is easy, the only technology
+you should use is serverless, or ephemereal services as they should have been known. Amazon has
+AWS Lambda, Google has Cloud Run, Azure has Azure Functions. All of the mentioned products support &lt;code&gt;Rust&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Always deploy to a serverless environment unless there is a really good reason not to. 
+And only deploy to a serverless environment that supports &lt;code&gt;Rust&lt;&#x2F;code&gt;. &lt;&#x2F;p&gt;
+&lt;h1 id=&quot;moral-imperative&quot;&gt;Moral imperative&lt;&#x2F;h1&gt;
+&lt;p&gt;There is more to ethical software than just making code that generates as little
+waste as possible. Other human beings are also a huge part of the equation, and
+I might write about that in the future. So let me end with a Top 3 of helpful tips.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Be kind and inclusive, especially to those that are already burdened by hardships.&lt;&#x2F;li&gt;
+&lt;li&gt;Use a resource efficient and correct programming language like &lt;code&gt;Rust&lt;&#x2F;code&gt;.&lt;&#x2F;li&gt;
+&lt;li&gt;Deploy services to serverless platforms. &lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Rust 2020</title>
+		<published>2019-10-31T00:00:00+00:00</published>
+		<updated>2019-10-31T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/rust-2020-call-for-blogs/" type="text/html"/>
+		<id>https://bes.github.io/blog/rust-2020-call-for-blogs/</id>
+		<content type="html">&lt;p&gt;We have all been called upon by &lt;a href=&quot;https:&#x2F;&#x2F;twitter.com&#x2F;rustlang&#x2F;status&#x2F;1189204447945211910&quot;&gt;@rustlang&lt;&#x2F;a&gt;
+to share our thoughts on what we want from Rust in 2020.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;p&gt;My wants are centered around the developer&#x2F;debug experience more than the language itself.
+I find the language to be expressive and attractive for many types of development,
+and I find the community to be very pleasant.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;more&quot;&gt;More&lt;&#x2F;h1&gt;
+&lt;p&gt;What do I want more of?&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;more-introspection&quot;&gt;More introspection&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;locally&quot;&gt;Locally&lt;&#x2F;h3&gt;
+&lt;p&gt;This might be targeted at LLDB more than Rust proper, but what I want are 
+more tools that are focused on letting the programmer understand what is going on
+inside a running debug build, without having to stop the program.&lt;&#x2F;p&gt;
+&lt;p&gt;A really nice tool that exists for Java is VisualVM.&lt;&#x2F;p&gt;
+&lt;p&gt;I have tried to find equivalent tools for Rust&#x2F;LLDB&#x2F;GDB but have not been able
+to find something that is both maintained and easy to use. Please let me know
+if I have missed anything, &lt;a href=&quot;&#x2F;about&quot;&gt;my contact information is available here&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Imagine being able to debug, learn, and draw conclusions from a live view into
+a running Rust binary. The state of each Thread. Stack information for each Thread. Time
+spent in each Thread. The number and size of Heap allocations. The current and
+historic number of active Threads.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;on-the-server&quot;&gt;On the server&lt;&#x2F;h3&gt;
+&lt;p&gt;It would be nice to be able to export those same metrics mentioned above to a metric
+aggregator, e.g. Prometheus.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;more-ide&quot;&gt;More IDE&lt;&#x2F;h2&gt;
+&lt;p&gt;I am an IntelliJ &#x2F; CLion user so I would like to see improvements for the Rust plugin
+for CLion. It&#x27;s already usable, but it needs more polish and more features.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;less&quot;&gt;Less&lt;&#x2F;h1&gt;
+&lt;p&gt;There was a section about disk usage here but then I found out about &lt;code&gt;cargo sweep&lt;&#x2F;code&gt; and &lt;code&gt;sccache&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;That&#x27;s what I want. Thank you for reading my incoherent ramblings. &lt;&#x2F;p&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Java 8 to 11: TLDR edition</title>
+		<published>2018-12-31T00:00:00+00:00</published>
+		<updated>2018-12-31T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/java-8-java-11-migration/" type="text/html"/>
+		<id>https://bes.github.io/blog/java-8-java-11-migration/</id>
+		<content type="html">&lt;p&gt;It&#x27;s been two years and two months since I last wrote a blog post - I promise to make it count!&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;&lt;h1 id=&quot;updates&quot;&gt;Updates&lt;&#x2F;h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;2019-01-05&lt;&#x2F;em&gt; Added section on combining Gradle, Error Prone, and Lombok.&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;em&gt;2019-01-05&lt;&#x2F;em&gt; Clarified which JNLP image to use.&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;em&gt;2019-01-18&lt;&#x2F;em&gt; Added section on JDK&#x2F;JRE&#x2F;JVM switching in a IntelliJ project that uses Gradle.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;why-now&quot;&gt;Why &lt;em&gt;now&lt;&#x2F;em&gt;?&lt;&#x2F;h1&gt;
+&lt;ul&gt;
+&lt;li&gt;The Jenkins Docker JNLP Slave image finally has a version that supports Java 11! 
+&lt;ul&gt;
+&lt;li&gt;Use &lt;code&gt;FROM jenkins&#x2F;jnlp-slave:latest-jdk11&lt;&#x2F;code&gt; for now.&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;issues.jenkins-ci.org&#x2F;browse&#x2F;JENKINS-51986&quot;&gt;Issue tracker&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;hub.docker.com&#x2F;r&#x2F;jenkins&#x2F;jnlp-slave&#x2F;&quot;&gt;Docker Hub&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;jenkinsci&#x2F;docker-jnlp-slave&quot;&gt;GitHub&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;Many projects have recently solved their initial &lt;em&gt;Java 9&lt;&#x2F;em&gt; issues (which are required for Java 11 support)
+&lt;ul&gt;
+&lt;li&gt;Including Spring!&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;I am no longer procrastinating.&lt;&#x2F;li&gt;
+&lt;li&gt;Maybe you thought the title would explain why I stopped blogging.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;&#x2F;h1&gt;
+&lt;ul&gt;
+&lt;li&gt;macOS 10.14&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;brew.sh&#x2F;&quot;&gt;Homebrew&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;If you skip the parts about installing Java 11 it&#x27;s mostly platform independent after that.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;relevant-documentation&quot;&gt;Relevant documentation&lt;&#x2F;h1&gt;
+&lt;p&gt;If you don&#x27;t want to read the rest of my incoherent ramblings:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;AdoptOpenJDK&#x2F;homebrew-openjdk&quot;&gt;Install OpenJDK 11 using brew&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.oracle.com&#x2F;javase&#x2F;9&#x2F;migrate&#x2F;&quot;&gt;Oracle: Migrate to Java 9&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;why-openjdk&quot;&gt;Why OpenJDK?&lt;&#x2F;h1&gt;
+&lt;p&gt;As mentioned in &lt;a href=&quot;https:&#x2F;&#x2F;blog.jetbrains.com&#x2F;idea&#x2F;2018&#x2F;09&#x2F;using-java-11-in-production-important-things-to-know&#x2F;&quot;&gt;JetBrains: Using Java 11 In Production: Important Things To Know&lt;&#x2F;a&gt;
+(by Trisha Gee!)&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Oracle’s JDK (commercial) – you can use this in development and testing for free, but if you use it in production you have to pay for it.&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;You &lt;em&gt;probably&lt;&#x2F;em&gt; don&#x27;t want to pay for it.&lt;&#x2F;p&gt;
+&lt;p&gt;Even better:&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Note that since Java 11, Oracle’s commercial JDK and Oracle’s OpenJDK builds are functionally the same, so we should be able to run our applications on either without having to make any changes or losing any features.&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;h1 id=&quot;list-available-java-versions&quot;&gt;List available Java versions&lt;&#x2F;h1&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&#x2F;usr&#x2F;libexec&#x2F;java_home -V
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;On my machine this currently yields &lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;% &#x2F;usr&#x2F;libexec&#x2F;java_home -V
+Matching Java Virtual Machines (2):
+    1.8.0_144, x86_64:	&amp;quot;Java SE 8&amp;quot;	&#x2F;Library&#x2F;Java&#x2F;JavaVirtualMachines&#x2F;jdk1.8.0_144.jdk&#x2F;Contents&#x2F;Home
+
+    &#x2F;Library&#x2F;Java&#x2F;JavaVirtualMachines&#x2F;jdk1.8.0_144.jdk&#x2F;Contents&#x2F;Home
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h1 id=&quot;getting-java-11-installed&quot;&gt;Getting Java 11 installed&lt;&#x2F;h1&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;brew tap AdoptOpenJDK&#x2F;openjdk
+brew cask install adoptopenjdk11
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And now let&#x27;s check what happened&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;% &#x2F;usr&#x2F;libexec&#x2F;java_home -V
+
+Matching Java Virtual Machines (2):
+    11.0.1, x86_64:	&amp;quot;AdoptOpenJDK 11.0.1&amp;quot;	&#x2F;Library&#x2F;Java&#x2F;JavaVirtualMachines&#x2F;adoptopenjdk-11.0.1.jdk&#x2F;Contents&#x2F;Home
+    1.8.0_144, x86_64:	&amp;quot;Java SE 8&amp;quot;	&#x2F;Library&#x2F;Java&#x2F;JavaVirtualMachines&#x2F;jdk1.8.0_144.jdk&#x2F;Contents&#x2F;Home
+
+&#x2F;Library&#x2F;Java&#x2F;JavaVirtualMachines&#x2F;adoptopenjdk-11.0.1.jdk&#x2F;Contents&#x2F;Home
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Magic!&lt;&#x2F;p&gt;
+&lt;p&gt;Now if I wanted to, I could uninstall Java 8, probably. But I don&#x27;t. You might though.&lt;&#x2F;p&gt;
+&lt;p&gt;If you want to, please do:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;stackoverflow.com&#x2F;questions&#x2F;19039752&#x2F;removing-java-8-jdk-from-mac&quot;&gt;StackOverflow: Uninstall Java 8&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.oracle.com&#x2F;javase&#x2F;8&#x2F;docs&#x2F;technotes&#x2F;guides&#x2F;install&#x2F;mac_jdk.html&quot;&gt;Oracle: Uninstall Java 8&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;update-to-use-gradle-5-0&quot;&gt;Update to use Gradle 5.0&lt;&#x2F;h1&gt;
+&lt;p&gt;Gradle 5+ is required for Java 11. Do your upgrade in whatever way you usually do it. Personally I add a configuration
+to my root &lt;code&gt;build.gradle&lt;&#x2F;code&gt; file that looks like this:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-groovy&quot; data-lang=&quot;groovy&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;wrapper {
+    gradleVersion = &amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;5.0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;
+    distributionType = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;Wrapper&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;DistributionType&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;ALL
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And then just run the associated task &lt;code&gt;.&#x2F;gradlew wrapper&lt;&#x2F;code&gt;, which updates Gradle for that project.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;java-modules-project-jigsaw&quot;&gt;Java Modules &#x2F; Project Jigsaw&lt;&#x2F;h1&gt;
+&lt;p&gt;No need to use &lt;code&gt;Java Modules&lt;&#x2F;code&gt; if you don&#x27;t want or need them!&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;intellij-idea-support&quot;&gt;IntelliJ IDEA support&lt;&#x2F;h1&gt;
+&lt;h2 id=&quot;add-and-set-the-jdk&quot;&gt;Add and set the JDK&lt;&#x2F;h2&gt;
+&lt;p&gt;First add Java 11 as a JDK - go to &lt;code&gt;File -&amp;gt; Project Structure -&amp;gt; Project&lt;&#x2F;code&gt;. Click &lt;code&gt;New&lt;&#x2F;code&gt; next to the Project SDK dropdown,
+(if Java 11 is not already present in the dropdown list). Now find the install path of Java 11. Should be the path
+that was output from the above &lt;code&gt;java_home&lt;&#x2F;code&gt; command: &lt;code&gt;&#x2F;Library&#x2F;Java&#x2F;JavaVirtualMachines&#x2F;adoptopenjdk-11.0.1.jdk&#x2F;Contents&#x2F;Home&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;When switching the project between JDK 8 and JDK 11, which might happen when switching branches or fixing bugs based on
+older commits, you may need to visit the &lt;code&gt;Project Structure&lt;&#x2F;code&gt; dialog again.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;set-jdk-jre-for-the-gradle-runtime&quot;&gt;Set JDK&#x2F;JRE for the Gradle runtime&lt;&#x2F;h2&gt;
+&lt;p&gt;This is important since for some reason the project JDK isn&#x27;t the same as the Gradle JDK&#x2F;JRE.&lt;&#x2F;p&gt;
+&lt;p&gt;Open the &lt;code&gt;Gradle sidebar&lt;&#x2F;code&gt; and click on the &lt;code&gt;wrench&lt;&#x2F;code&gt;, or go to &lt;code&gt;Preferences -&amp;gt; Build, Execution, Deployment -&amp;gt; Build Tools -&amp;gt; Gradle&lt;&#x2F;code&gt;.
+There you will find a box called &lt;code&gt;Gradle JVM&lt;&#x2F;code&gt; where you can select which version of Java that gradle should run as when
+IntelliJ needs to run it.&lt;&#x2F;p&gt;
+&lt;p&gt;This is important if you use the IntelliJ builder for compiling, but delegate to Gradle when testing.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;use-a-gradle-configuration-to-set-jdk-version-for-intellij-subprojects&quot;&gt;Use a Gradle configuration to set JDK version for IntelliJ subprojects&lt;&#x2F;h2&gt;
+&lt;p&gt;Go to the root &lt;code&gt;build.gradle&lt;&#x2F;code&gt; and enter this nugget somewhere:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-groovy&quot; data-lang=&quot;groovy&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;allprojects { project -&amp;gt;
+    project.plugins.withId(&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;java&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;) {
+        sourceCompatibility = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;11.0
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;        targetCompatibility = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;11.0
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+    project.plugins.withId(&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;java-library&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;) {
+        sourceCompatibility = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;11.0
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;        targetCompatibility = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;11.0
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Now refresh the Gradle project in IntelliJ and you should be able to use Java 11 everywhere, since IntelliJ picks up
+that subprojects are Java 11.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;what-did-i-get&quot;&gt;What did I get?&lt;&#x2F;h1&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Java_version_history#Java_SE_9&quot;&gt;Wikipedia has got your back&lt;&#x2F;a&gt;, but here&#x27;s the TLDR:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Java 9
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;G1 Garbage Collector&lt;&#x2F;code&gt; is now default&lt;&#x2F;li&gt;
+&lt;li&gt;Not much else, &lt;code&gt;Java Modules&lt;&#x2F;code&gt; is probably the only thing of developer interest and you don&#x27;t need to use it unless 
+you are writing a library&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;Java 10
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;var&lt;&#x2F;code&gt; keyword and &lt;em&gt;Local-variable type inference&lt;&#x2F;em&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;The rest is mostly runtime and behind-the-scenes stuff&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;Java 11
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Local-Variable Syntax for Lambda Parameters&lt;&#x2F;em&gt;, more &lt;code&gt;var&lt;&#x2F;code&gt; :)&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;But mostly you got the freedom and&#x2F;or burden to adopt new Java versions faster!&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;error-prone&quot;&gt;Error Prone&lt;&#x2F;h1&gt;
+&lt;p&gt;You can now use the latest version of &lt;code&gt;Error Prone&lt;&#x2F;code&gt;, which should make you very happy.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;errorprone.info&#x2F;&quot;&gt;Project page&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;tbroyer&#x2F;gradle-errorprone-plugin&quot;&gt;Gradle plugin&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;combining-gradle-error-prone-and-lombok&quot;&gt;Combining Gradle, Error Prone, and Lombok&lt;&#x2F;h1&gt;
+&lt;p&gt;To get Gradle 5.0 to accept Lombok using Java 11 in combination with Error Prone I had to change the following&lt;&#x2F;p&gt;
+&lt;p&gt;From&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-groovy&quot; data-lang=&quot;groovy&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;dependencies {
+    compileOnly &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;org.projectlombok:lombok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    testCompileOnly &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;org.projectlombok:lombok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; ... more dependencies
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;To&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-groovy&quot; data-lang=&quot;groovy&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;dependencies {
+    compileOnly &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;org.projectlombok:lombok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    annotationProcessor &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;org.projectlombok:lombok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    testCompileOnly &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;org.projectlombok:lombok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    testAnnotationProcessor &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;org.projectlombok:lombok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+    
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; ... more dependencies
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;That way, Error Prone knows about the code generated by Lombok.&lt;&#x2F;p&gt;
+&lt;p&gt;Please note that I define dependency versions globally using the
+&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;spring-gradle-plugins&#x2F;dependency-management-plugin&#x2F;releases&quot;&gt;Spring Dependency Management Plugin&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Let&#x27;s dump some tcp - Android packet sniffing</title>
+		<published>2016-10-12T00:00:00+00:00</published>
+		<updated>2016-10-12T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/android-tcpdump/" type="text/html"/>
+		<id>https://bes.github.io/blog/android-tcpdump/</id>
+		<content type="html">&lt;p&gt;Let&#x27;s hold hands while we take a dump together!&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;&lt;h1 id=&quot;background&quot;&gt;Background&lt;&#x2F;h1&gt;
+&lt;p&gt;If you don&#x27;t want to download any old tcpdump binary file and put it all
+up in your rooted Android phone, because reasons, this guide might be for
+you.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;goals&quot;&gt;Goals&lt;&#x2F;h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Build tcpdump&lt;&#x2F;li&gt;
+&lt;li&gt;Install tcpdump&lt;&#x2F;li&gt;
+&lt;li&gt;Run tcpdump&lt;&#x2F;li&gt;
+&lt;li&gt;Analyze the dump&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;As a bonus, I want to explain how to do this relatively platform independently.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;&#x2F;h1&gt;
+&lt;p&gt;As I said, platform independently. Here we go!&lt;&#x2F;p&gt;
+&lt;p&gt;Unfortunately, platform independent means installing a lot of software.
+If you are already on a relatively new version of Ubuntu, you can skip to
+&amp;quot;Ubuntu packages&amp;quot; below.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ubuntu-xenial-in-vagrant&quot;&gt;Ubuntu Xenial in Vagrant&lt;&#x2F;h2&gt;
+&lt;p&gt;Start by installing &lt;a href=&quot;https:&#x2F;&#x2F;www.vagrantup.com&#x2F;downloads.html&quot;&gt;Vagrant&lt;&#x2F;a&gt;,
+and then dump this into a file called Vagrantfile somewhere on your computer:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;Vagrant.configure(2) do |config|
+ config.vm.box = &amp;quot;ubuntu&#x2F;xenial64&amp;quot;
+ # Edit this line so that it fits your system configuration
+ config.vm.synced_folder &amp;quot;&#x2F;My&#x2F;host&#x2F;computer&#x2F;folder&#x2F;Downloads&amp;quot;, &amp;quot;&#x2F;downloads&amp;quot; 
+end
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Now open your platform dependent terminal (cmd? xterm? iterm?) and run:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;cd Whatever&#x2F;Directory&#x2F;you&#x2F;chose
+vagrant up
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Wait for a longish while, until vagrant gets its affairs into order then run:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;vagrant ssh
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;When we have entered the ubuntu shell we can prepare the ubuntu packages.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ubuntu-packages&quot;&gt;Ubuntu packages&lt;&#x2F;h2&gt;
+&lt;p&gt;These packages need to be installed before we continue&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;sudo apt-get install gcc-arm-linux-gnueabi
+sudo apt-get install make
+sudo apt-get install flex
+sudo apt-get install byacc
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h1 id=&quot;build-tcpdump&quot;&gt;Build tcpdump&lt;&#x2F;h1&gt;
+&lt;p&gt;Let&#x27;s continue in our ubuntu shell&lt;&#x2F;p&gt;
+&lt;p&gt;Copy this into an executable script file or just run it line by line:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;export TCPDUMP=4.7.4
+export LIBPCAP=1.7.4
+
+wget http:&#x2F;&#x2F;www.tcpdump.org&#x2F;release&#x2F;tcpdump-$TCPDUMP.tar.gz
+wget http:&#x2F;&#x2F;www.tcpdump.org&#x2F;release&#x2F;libpcap-$LIBPCAP.tar.gz
+
+tar zxvf tcpdump-$TCPDUMP.tar.gz
+tar zxvf libpcap-$LIBPCAP.tar.gz
+export CC=arm-linux-gnueabi-gcc
+cd libpcap-$LIBPCAP
+.&#x2F;configure --host=arm-linux --with-pcap=linux
+make
+cd ..
+
+cd tcpdump-$TCPDUMP
+export ac_cv_linux_vers=2
+export CFLAGS=-static
+export CPPFLAGS=-static
+export LDFLAGS=-static
+
+.&#x2F;configure --host=arm-linux --disable-ipv6
+make
+
+arm-linux-gnueabi-strip tcpdump
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Source: &lt;a href=&quot;http:&#x2F;&#x2F;www.androidtcpdump.com&#x2F;android-tcpdump&#x2F;compile&quot;&gt;androidtcpdump.com&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;After you have successfully built tcpdump, copy it to the shared directory
+we set up in the Vagrantfile, or if you are on your native box copy it to
+any directory you like:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;cp tcpdump-4.7.4&#x2F;tcpdump &#x2F;downloads
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;On your native machine, go to the directory that &amp;quot;&#x2F;downloads&amp;quot; in Vagrant
+(or your local machine) points to.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;install-tcpdump&quot;&gt;Install tcpdump&lt;&#x2F;h1&gt;
+&lt;p&gt;Unfortunately, this is the point where you need something that I don&#x27;t
+have time to explain: A rooted Android phone. Without root you can&#x27;t
+push tcpdump, and consequently you can&#x27;t run tcpdump.&lt;&#x2F;p&gt;
+&lt;p&gt;First let&#x27;s find a directory to push to, sdcard1 is available on some
+modern Android platforms.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;adb shell ls
+[... long list of files ...]
+sdcard
+sdcard1
+[... probably more files ...]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;As I said, I want &lt;code&gt;sdcard1&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;adb root
+adb remount
+adb push tcpdump &#x2F;sdcard1&#x2F;tcpdump
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h1 id=&quot;run-tcpdump&quot;&gt;Run tcpdump&lt;&#x2F;h1&gt;
+&lt;p&gt;Let&#x27;s drop into adb shell&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;adb shell
+cd sdcard1
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;From here we can run tcpdump&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;tcpdump -i any -p -s 0 -w &#x2F;sdcard1&#x2F;capture.pcap
+tcpdump: listening on any, link-type LINUX_SLL (Linux cooked), capture size 65535 bytes
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;This will block as long as you want to do packet capture.&lt;&#x2F;p&gt;
+&lt;p&gt;Press Ctrl+C to stop listening. Pressing Ctrl+C might make tcpdump miss some buffered packets, so listen a while longer than you need to (do some web surfing then press Ctrl+C).&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(Ctrl+C pressed)
+28220 packets captured
+35119 packets received by filter
+6899 packets dropped by kernel
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Here&#x27;s some info about the tcpdump options:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-i any&lt;&#x2F;code&gt;: listen on any network interface&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-p&lt;&#x2F;code&gt;: disable promiscuous mode (doesn&#x27;t work anyway)&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-s 0&lt;&#x2F;code&gt;: capture the entire packet&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-w&lt;&#x2F;code&gt;: write packets to a file (rather than printing to stdout)&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Drop out of the adb shell&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;exit
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Pull the file to your local machine&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell&quot; data-lang=&quot;shell&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;adb pull &#x2F;sdcard1&#x2F;capture.pcap
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h1 id=&quot;analyze-the-dump&quot;&gt;Analyze the dump&lt;&#x2F;h1&gt;
+&lt;p&gt;Download &lt;a href=&quot;https:&#x2F;&#x2F;www.wireshark.org&#x2F;&quot;&gt;Wireshark&lt;&#x2F;a&gt; and install it.&lt;&#x2F;p&gt;
+&lt;p&gt;Open the file &lt;code&gt;capture.pcap&lt;&#x2F;code&gt; in Wireshark. Unfortunately, how to analyze it in Wireshark 
+is beyond the scope of this guide, but I&#x27;ll give you some hints.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;wireshark-basics&quot;&gt;Wireshark basics&lt;&#x2F;h2&gt;
+&lt;p&gt;Load the file using File -&amp;gt; Open.&lt;&#x2F;p&gt;
+&lt;p&gt;In the horizontal search bar &#x2F; text field that spans the entire width of
+the application window, you can write queries for filtering the dump.&lt;&#x2F;p&gt;
+&lt;p&gt;A simple filter query is simply the name of the protocol you want to analyze,
+e.g. &lt;code&gt;http&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;After listing all &lt;code&gt;http&lt;&#x2F;code&gt; packets, you can get more information for a specific 
+row &#x2F; call by right clicking that row and selecting e.g. Follow &amp;gt; HTTP Stream.&lt;&#x2F;p&gt;
+&lt;p&gt;After following a stream, go back to the filter list by writing &lt;code&gt;http&lt;&#x2F;code&gt; in
+the search field again.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;epilogue&quot;&gt;Epilogue&lt;&#x2F;h1&gt;
+&lt;p&gt;All goals (kind of) achieved!&lt;&#x2F;p&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Authentication &amp; authorization - what gives?</title>
+		<published>2016-07-04T00:00:00+00:00</published>
+		<updated>2016-07-04T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/authentication-authorization/" type="text/html"/>
+		<id>https://bes.github.io/blog/authentication-authorization/</id>
+		<content type="html">&lt;p&gt;You think you&#x27;re hot shit and now you want to know some stuff about authentication
+and authorization. Maybe start implementing. You want it &lt;em&gt;all&lt;&#x2F;em&gt;.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;p&gt;Disclaimer: The below blog post was written by me for me, and might (and probably does!)
+contain errors. Don&#x27;t rely on anything below as &lt;em&gt;fact&lt;&#x2F;em&gt;, from now you&#x27;re on your own.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;what-we-have&quot;&gt;What we have&lt;&#x2F;h1&gt;
+&lt;p&gt;This is typically what you see when you visit pages attempting to explain
+authentication &amp;amp; authorization:&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;&#x2F;images&#x2F;webflow.png&quot; alt=&quot;I kinda borrowed this image from Google&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;The above image specifically covers the Google OAuth 2.0 flow, using Google as an
+OpenID Connect Provider. This truly is the future, right? Right? Right.&lt;&#x2F;p&gt;
+&lt;p&gt;Another way of describing the flow is from the OAuth 2.0 spec:&lt;&#x2F;p&gt;
+&lt;pre&gt;
++--------+                               +---------------+
+|        |--(A)- Authorization Request -&gt;|   Resource    |
+|        |&lt;-(B)-- Authorization Grant ---|     Owner     |
+|        |                               +---------------+
+|        |                               +---------------+
+|        |--(C)-- Authorization Grant --&gt;| Authorization |
+| Client |&lt;-(D)----- Access Token -------|     Server    |
+|        |                               +---------------+
+|        |                               +---------------+
+|        |--(E)----- Access Token ------&gt;|    Resource   |
+|        |&lt;-(F)--- Protected Resource ---|     Server    |
++--------+                               +---------------+
+&lt;&#x2F;pre&gt;
+&lt;p&gt;The images leave a lot to the imagination, but on a high level they show
+authentication and authorization information being exchanged.&lt;&#x2F;p&gt;
+&lt;p&gt;We need to know more about all the moving parts!&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;authentication&quot;&gt;Authentication&lt;&#x2F;h1&gt;
+&lt;h2 id=&quot;openid-connect&quot;&gt;OpenID Connect&lt;&#x2F;h2&gt;
+&lt;p&gt;One way of authenticating is using &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;OpenID_Connect&quot;&gt;OpenID Connect&lt;&#x2F;a&gt;,
+it&#x27;s the third generation of OpenID - the first two being OpenID Authentication 1.X,
+and OpenID Authentication 2.0.&lt;&#x2F;p&gt;
+&lt;p&gt;The two old versions are specific schemes for authenticating users, but were
+&amp;quot;unnecessarily complicated&amp;quot;. Since everyone is using OAuth 2, OpenID Connect was
+implemented to run on top of it - or as the introduction to the spec states:&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;... a simple identity layer on top of the OAuth 2.0 protocol&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;A full list of OpenID specifications can be found on their
+&lt;a href=&quot;http:&#x2F;&#x2F;openid.net&#x2F;developers&#x2F;specs&#x2F;&quot;&gt;Specifications &amp;amp; Developer Information&lt;&#x2F;a&gt;
+site. The &lt;a href=&quot;http:&#x2F;&#x2F;openid.net&#x2F;specs&#x2F;openid-connect-core-1_0.html&quot;&gt;OpenID Connect Core 1.0&lt;&#x2F;a&gt;
+specification for example.&lt;&#x2F;p&gt;
+&lt;p&gt;OpenID Connect is used by a lot of organizations, which lend their authentication
+service powers (called OpenID Provider - OP) to our servers (called Relying Party - RP).&lt;&#x2F;p&gt;
+&lt;p&gt;Honest question: Why couldn&#x27;t they just have called it OpenID 3.0 for OAuth 2.0 or something?
+When running across &amp;quot;OpenID 2.0&amp;quot; and then something called &amp;quot;OpenID Connect&amp;quot;,
+naturally you&#x27;re going to think that the &amp;quot;2.0&amp;quot; is newer
+&lt;a href=&quot;https:&#x2F;&#x2F;www.youtube.com&#x2F;watch?v=gAjR4_CbPpQ&quot;&gt;harder better faster stronger&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;other-ways&quot;&gt;Other ways&lt;&#x2F;h2&gt;
+&lt;p&gt;OpenID Connect is not the only game in town,
+&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Facebook_Platform#Facebook_Connect&quot;&gt;Facebook Connect&lt;&#x2F;a&gt;
+is another major player.&lt;&#x2F;p&gt;
+&lt;p&gt;You can also try to roll your own authentication service, and if you do that you&#x27;re
+not necessarily constrained to the requirements of OpenID Connect. It&#x27;s not a bad
+idea to be heavily inspired by the work of &lt;em&gt;geniuses&lt;&#x2F;em&gt;, though.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;authorization&quot;&gt;Authorization&lt;&#x2F;h1&gt;
+&lt;p&gt;Let&#x27;s talk about OAuth 2.0 baby.
+&lt;a href=&quot;https:&#x2F;&#x2F;www.youtube.com&#x2F;watch?v=ydrtF45-y-g&quot;&gt;Let&#x27;s talk about you and me. Let&#x27;s talk about all the good things, and the bad things.&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Instead of using the terms &lt;em&gt;OpenID Provider&lt;&#x2F;em&gt; and &lt;em&gt;Relying Party&lt;&#x2F;em&gt;, the OAuth 2.0
+spec uses&lt;&#x2F;p&gt;
+&lt;table&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Resource owner
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Capable of granting access, sometimes an end-user
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Resource server
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Has resources accessible after presenting an access token
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+            &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Client
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                An application (server) making requests on behalf of the resource owner
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Authorization server
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Issues tokens after authentication and authorization
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+    &lt;&#x2F;tbody&gt;
+&lt;&#x2F;table&gt;
+&lt;p&gt;It goes on stating &lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-1.1&quot;&gt;&amp;quot;The interaction between the authorization server and resource server
+is beyond the scope of this specification.  The authorization server
+may be the same server as the resource server or a separate entity.&amp;quot;&amp;quot;&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;authorization-grant&quot;&gt;Authorization grant&lt;&#x2F;h2&gt;
+&lt;p&gt;An &lt;em&gt;authorization grant&lt;&#x2F;em&gt; is the &lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-1.3&quot;&gt;&amp;quot;... resource
+owner&#x27;s authorization (to access its protected resources) used by the
+client to obtain an access token&amp;quot;&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;There are four &lt;em&gt;grants types&lt;&#x2F;em&gt; defined in the spec&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Authorization Code&lt;&#x2F;li&gt;
+&lt;li&gt;Implicit&lt;&#x2F;li&gt;
+&lt;li&gt;Resource Owner Password Credentials&lt;&#x2F;li&gt;
+&lt;li&gt;Client Credentials.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Each grant has an
+associated &lt;em&gt;Flow&lt;&#x2F;em&gt;, which are ways of obtaining tokens used for authorization after
+authenticating a user, the most common being authorization code flow, and
+implicit flow.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;authorization-code-flow&quot;&gt;&lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-1.3.1&quot;&gt;Authorization code flow&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;Typically involves a browser (user agent), a web server (client),
+a resource owner (user), and an authorization server.&lt;&#x2F;p&gt;
+&lt;p&gt;Explained in detail in &lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-4.1&quot;&gt;section 4.1&lt;&#x2F;a&gt;
+of the spec, summarized below:&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;The client (server) redirects the UA to the authorization server.&lt;&#x2F;li&gt;
+&lt;li&gt;The authorization server authenticates the user and asks the user to &lt;em&gt;grant&lt;&#x2F;em&gt; access.&lt;&#x2F;li&gt;
+&lt;li&gt;If access is granted the authorization server redirects the user back to the client (server).&lt;&#x2F;li&gt;
+&lt;li&gt;The client (server) requests an access token using the authorization code received in step 3,
+the redirection URI is also sent to the authorization server for validation.&lt;&#x2F;li&gt;
+&lt;li&gt;The client is authenticated on the authorization server using the authorization code and
+redirect URI. If valid, the authorization gives the client an access token (and optionally
+a refresh token).&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;&lt;em&gt;Summarized&lt;&#x2F;em&gt; means that a lot of detail was left out. Read the spec!&lt;&#x2F;p&gt;
+&lt;p&gt;In this flow, the access token never leaves the &lt;em&gt;client&lt;&#x2F;em&gt; (server), instead the
+client is connected to the UA&#x2F;user via e.g. sessions.&lt;&#x2F;p&gt;
+&lt;p&gt;I guess the access token can be exposed to the UA anyway, if the implementation
+chooses to do that. The takeaway is
+that the client uses credentials (typically client secret) issued by the authorization server,
+that should NOT be used in the implicit flow. Otherwise it wouldn&#x27;t be a
+&lt;em&gt;secret&lt;&#x2F;em&gt;.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;implicit-flow&quot;&gt;&lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-1.3.2&quot;&gt;Implicit flow&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;Used when there is no, or you don&#x27;t specifically have a need for, the client being involved.
+The authorization server sends an access token directly to the UA in the redirect.
+Typically used by Javascript clients or Android apps.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;mixin-it-up&quot;&gt;Mixin&#x27; it up&lt;&#x2F;h1&gt;
+&lt;p&gt;OpenID Connect runs on top of OAuth 2.0 - always keep that in mind when reading
+about these two separate specifications!&lt;&#x2F;p&gt;
+&lt;p&gt;The concepts of the different specs
+and auxiliary technologies like JWT are often presented as one and the same
+by third parties (blogs, etc) and one needs to keep that in mind.&lt;&#x2F;p&gt;
+&lt;p&gt;OpenID Connect gives you the convenient ID Token, which can be used in parallel
+with the OAuth 2.0 Access Token, or separately!&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;tokens&quot;&gt;Tokens&lt;&#x2F;h1&gt;
+&lt;p&gt;All of these are (usually) &lt;a href=&quot;https:&#x2F;&#x2F;jwt.io&#x2F;&quot;&gt;JWTs&lt;&#x2F;a&gt;. Basically they contain claims, and (AFAIK)
+those claims should only ever be trusted if they are digitally signed by the
+issuer using e.g. &lt;a href=&quot;https:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc7515&quot;&gt;JWS&lt;&#x2F;a&gt;, and that signature should
+always be verified by anyone about to trust those claims (e.g. a resource server).&lt;&#x2F;p&gt;
+&lt;p&gt;Here&#x27;s one place to &lt;a href=&quot;http:&#x2F;&#x2F;kjur.github.io&#x2F;jsjws&#x2F;tool_jwt.html&quot;&gt;play around&lt;&#x2F;a&gt; with JWTs
+and different types of signatures.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;jwt-signatures&quot;&gt;JWT signatures&lt;&#x2F;h2&gt;
+&lt;p&gt;According to
+&lt;a href=&quot;https:&#x2F;&#x2F;auth0.com&#x2F;blog&#x2F;2015&#x2F;12&#x2F;17&#x2F;json-web-token-signing-algorithms-overview&#x2F;&quot;&gt;auth0&lt;&#x2F;a&gt;
+the most common types of signatures are&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;HMAC + SHA256
+Creates a signature using a &lt;em&gt;key&lt;&#x2F;em&gt; and a &lt;em&gt;message&lt;&#x2F;em&gt;. The &lt;em&gt;key&lt;&#x2F;em&gt; is the same every time
+and the &lt;em&gt;message&lt;&#x2F;em&gt; is the JWT. Common, but more insecure than the asymmetric algorithms below.&lt;&#x2F;li&gt;
+&lt;li&gt;RSASSA-PKCS1-v1_5 + SHA256
+Asymmetric signing using RSA. Usually faster than ECDSA.&lt;&#x2F;li&gt;
+&lt;li&gt;ECDSA + P-256 + SHA256
+Asymmetric signing using ECDSA. Smaller keys than RSA, resulting in smaller JWTs.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;id-token&quot;&gt;ID Token&lt;&#x2F;h2&gt;
+&lt;p&gt;The OpenID Connect Core 1.0 specification defines the &lt;a href=&quot;http:&#x2F;&#x2F;openid.net&#x2F;specs&#x2F;openid-connect-core-1_0.html#IDToken&quot;&gt;ID Token&lt;&#x2F;a&gt; in section 2.&lt;&#x2F;p&gt;
+&lt;p&gt;There are a &lt;em&gt;bunch&lt;&#x2F;em&gt; of fields, and following the spec for validating the ID Token is
+a really good idea. Read the spec. Live the spec.&lt;&#x2F;p&gt;
+&lt;p&gt;The ID Token contains claims and typically identifies a user in the context of the OP.&lt;&#x2F;p&gt;
+&lt;p&gt;If you are building a service with e.g. Google Sign-In, the ID Token is issued by
+Google and &lt;a href=&quot;https:&#x2F;&#x2F;developers.google.com&#x2F;identity&#x2F;sign-in&#x2F;android&#x2F;backend-auth&quot;&gt;according to them&lt;&#x2F;a&gt;
+the RP should use the ID Token to uniquely identify a user in the RPs context
+(after verifying the integrity of the token).&lt;&#x2F;p&gt;
+&lt;p&gt;If you are building your own service and don&#x27;t have any use for e.g. Google APIs
+but you still want to use Google accounts for signing in to your service, just
+use the ID Token and forget about the Access Token.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;access-token&quot;&gt;Access token&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-1.4&quot;&gt;&amp;quot;Access tokens are credentials used to access protected resources.  An
+access token is a string representing an authorization issued to the
+client.&amp;quot;&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Typically the access token is a JWT token, but according to the spec it doesn&#x27;t have to be.&lt;&#x2F;p&gt;
+&lt;p&gt;The most important thing is, when you need access to an API (resource), use the token that
+the authorization server gave you!&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;access-token-types&quot;&gt;Access Token Types&lt;&#x2F;h3&gt;
+&lt;p&gt;There are a &lt;a href=&quot;https:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;rfc6749#section-7.1&quot;&gt;number&lt;&#x2F;a&gt; of access token
+types.&lt;&#x2F;p&gt;
+&lt;h4 id=&quot;bearer-token&quot;&gt;Bearer token&lt;&#x2F;h4&gt;
+&lt;p&gt;Whoever presents the token shall be granted access to a resource as long as
+the token is valid. This is the most common type of access token.&lt;&#x2F;p&gt;
+&lt;h4 id=&quot;mac-token&quot;&gt;MAC token&lt;&#x2F;h4&gt;
+&lt;p&gt;The &lt;a href=&quot;http:&#x2F;&#x2F;tools.ietf.org&#x2F;html&#x2F;draft-ietf-oauth-v2-http-mac-05&quot;&gt;draft&lt;&#x2F;a&gt; still isn&#x27;t
+finalized, but from what I can gather, the token contains some cryptographic content
+that would make it harder to forge and&#x2F;or read. A probable use case would be
+using it in use-cases lacking HTTPS&#x2F;TLS capabilities.&lt;&#x2F;p&gt;
+&lt;p&gt;Don&#x27;t quote me on that.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;refresh-token&quot;&gt;Refresh token&lt;&#x2F;h2&gt;
+&lt;p&gt;A token used to request new access tokens as they expire. Handy if one wants
+to avoid going through the authorization flow once again.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;other-sources&quot;&gt;Other Sources&lt;&#x2F;h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http:&#x2F;&#x2F;connect2id.com&#x2F;learn&#x2F;openid-connect&quot;&gt;OpenID Connect explained&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>TL;DR-time: XSS &amp; XSRF (web attack vectors)</title>
+		<published>2016-06-12T00:00:00+00:00</published>
+		<updated>2016-06-12T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/xss-xsrf/" type="text/html"/>
+		<id>https://bes.github.io/blog/xss-xsrf/</id>
+		<content type="html">&lt;p&gt;I&#x27;m going to explain Cross-site scripting (XSS) &amp;amp; Cross-site request forgery
+(XSRF&#x2F;CSRF) to myself.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;&lt;h1 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;&#x2F;h1&gt;
+&lt;p&gt;Super long names like &amp;quot;Cross-site request forgery&amp;quot; and their scary acronyms don&#x27;t
+exactly lend themselves to instant revelations about how they work.
+Not like S.C.U.B.A., anyway.&lt;&#x2F;p&gt;
+&lt;p&gt;Therefore we must know some things™. Welcome to the TL;DR section.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Adversary_%28cryptography%29&quot;&gt;Mallory&lt;&#x2F;a&gt; has her work cut out for her!&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;xss&quot;&gt;XSS&lt;&#x2F;h3&gt;
+&lt;p&gt;Basically, if your web page displays input from users, and that input is
+not scrubbed by you, that input could be &lt;em&gt;weaponized&lt;&#x2F;em&gt; — e.g. if it loads (or is)
+a script (yes, that was an em dash).&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;em&gt;XSS generally applies when the user is interacting with your page directly&lt;&#x2F;em&gt;.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;xsrf&quot;&gt;XSRF&lt;&#x2F;h3&gt;
+&lt;p&gt;Any page that you visit can load content from your web page via GET (and
+possibly other means if &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Cross-origin_resource_sharing&quot;&gt;CORS&lt;&#x2F;a&gt;
+is disabled, or when using XSS + &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;XMLHttpRequest&quot;&gt;XHR&lt;&#x2F;a&gt;).
+All of this is perfectly valid, because many pages &lt;em&gt;want&lt;&#x2F;em&gt; to provide resources
+like images.&lt;&#x2F;p&gt;
+&lt;p&gt;Loading an image can be done with an &amp;lt;img&amp;gt; tag. That &amp;lt;img&amp;gt; tag may point to ANY
+url on your site, and if your site uses cookies
+&lt;a href=&quot;http:&#x2F;&#x2F;stackoverflow.com&#x2F;questions&#x2F;3732087&#x2F;is-csrf-possible-without-cookies&quot;&gt;(or possibly other means of auth*)&lt;&#x2F;a&gt;,
+and you are still logged in, Mallory might start wreaking havoc.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;em&gt;XSRF generally applies when the user is not interacting with your page directly&lt;&#x2F;em&gt;.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;combination-of-xss-xsrf&quot;&gt;Combination of XSS &amp;amp; XSRF&lt;&#x2F;h3&gt;
+&lt;p&gt;Obviously, if the attackers can combine these methods, they might be more successful
+than when employing just one.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;xss-in-depth-ish&quot;&gt;XSS in-depth-ish&lt;&#x2F;h1&gt;
+&lt;p&gt;Some examples will be given, followed by a section on protection. No guarantees
+can be given as it pertains to their efficacy.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;xss-as-a-script-in-query-parameters&quot;&gt;XSS as a script in query parameters&lt;&#x2F;h2&gt;
+&lt;p&gt;This vector is generally called &amp;quot;non-persistent&amp;quot;.&lt;&#x2F;p&gt;
+&lt;p&gt;If the script is allowed to be included in a user-facing HTML the attacker can
+perform any action that the user is allowed to perform. An example of this is
+a query parameter &lt;code&gt;name=your%20name&lt;&#x2F;code&gt; that your page reads and displays as the
+title of some page. Now the attacker crafts some url
+&lt;code&gt;http:&#x2F;&#x2F;your-domain.com&#x2F;page?name=&amp;lt;script&amp;gt;alert(&#x27;xss&#x27;)&amp;lt;&#x2F;script&amp;gt;&lt;&#x2F;code&gt;, and voila you
+dad just got rekt. (&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Cross-site_scripting#Exploit_examples&quot;&gt;The url can be further masked using character percent escaping&lt;&#x2F;a&gt;).&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;xss-as-a-script-in-a-forum-post&quot;&gt;XSS as a script in a forum post&lt;&#x2F;h2&gt;
+&lt;p&gt;This vector is generally called &amp;quot;persistent&amp;quot;.&lt;&#x2F;p&gt;
+&lt;p&gt;If you allow user input in a forum post, user support request ticket, etc. you
+may be subject to XSS attacks. The attack happens when Mallory is allowed to post
+user-facing HTML that is not sanitized using HTML escaping. Same scenario as in the
+non-persistent case — Your dad is going to get rekt; only this time he gets rekt
+every time he refreshes that forum post on gastrointestinal health.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;protections&quot;&gt;Protections&lt;&#x2F;h2&gt;
+&lt;p&gt;Always sanitize external input. Always validate external input. Disable scripts
+in your browser (you&#x27;re not going to do that though, are you, tough guy?).
+&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Cross-site_scripting#Emerging_defensive_technologies&quot;&gt;There&#x27;s some stuff coming in future browsers too&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;xsrf-in-depth-ish&quot;&gt;XSRF in-depth-ish&lt;&#x2F;h1&gt;
+&lt;p&gt;&lt;a href=&quot;http:&#x2F;&#x2F;www.gnucitizen.org&#x2F;blog&#x2F;csrf-demystified&#x2F;&quot;&gt;This guy&lt;&#x2F;a&gt; made me read a lot
+of text, and I&#x27;m not going to put you through that.&lt;&#x2F;p&gt;
+&lt;p&gt;We love to love cookies, and Mallory &lt;em&gt;knows it&lt;&#x2F;em&gt;. That &amp;lt;img&amp;gt; tag we talked about
+earlier, it might look like this:
+&lt;code&gt;&amp;lt;img src=&amp;quot;http:&#x2F;&#x2F;your-domain.com&#x2F;me&#x2F;settings?delete_account=true&amp;quot;&#x2F;&amp;gt;&lt;&#x2F;code&gt;. (You&#x27;re
+probably not going to have an API like that but
+&lt;a href=&quot;https:&#x2F;&#x2F;www.google.se&#x2F;search?q=bear&quot;&gt;bear&lt;&#x2F;a&gt; with me). That resource is going to
+be loaded using a GET request, and the browser is going to send your cookies right
+along with it. &lt;em&gt;That&#x27;s right&lt;&#x2F;em&gt;, your dad just keeps getting rekt.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;protection&quot;&gt;Protection&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;a href=&quot;http:&#x2F;&#x2F;security.stackexchange.com&#x2F;questions&#x2F;76544&#x2F;modern-browsers-safe-to-ignore-csrf&quot;&gt;This guy&lt;&#x2F;a&gt;
+has a novel approach to web browser security as it pertains to XSRF attacks:
+load every page that requires credentials separately and make sure no other web
+pages are loaded. Sign out a soon as you are finished. Oh, and restart your browser
+after signing out, who knows what might be cached? No one is going to do
+that though.&lt;&#x2F;p&gt;
+&lt;p&gt;We&#x27;re going to help your dad out, because he&#x27;s a nice guy.&lt;&#x2F;p&gt;
+&lt;p&gt;If you&#x27;re not into TL;DR, there&#x27;s this: &lt;a href=&quot;https:&#x2F;&#x2F;www.owasp.org&#x2F;index.php&#x2F;Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet&quot;&gt;OWASP Cross-Site Request Forgery (CSRF) Prevention Cheat Sheet&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;strong&gt;Don&#x27;t expose resource changing actions as GETs&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Not going to help against XSS + XHR + XSRF.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;&lt;strong&gt;Check the header for origin &#x2F; referer&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Can be circumvented - historically by &lt;a href=&quot;https:&#x2F;&#x2F;www.google.se&#x2F;search?q=flash+sc2&quot;&gt;flash&lt;&#x2F;a&gt;, more recently by browser plugins. Also, some web proxies will strip these headers for different reasons.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;&lt;strong&gt;XSRF tokens&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;http:&#x2F;&#x2F;stackoverflow.com&#x2F;questions&#x2F;5207160&#x2F;what-is-a-csrf-token-what-is-its-importance-and-how-does-it-work#comment62477933_33829607&quot;&gt;Or as this guy points out, anti-XSRF tokens&lt;&#x2F;a&gt;,
+are a way to validate all requests by generating unique ids and appending
+them using e.g. hidden input fields in forms, or required request parameters.
+Optimally the id is generated per request, but for practical reasons (web apps)
+they can be per session, or alternatively cookies with a predefined, short, lifespan.&lt;&#x2F;p&gt;
+&lt;p&gt;An example:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;The server generates a hard to guess id, and saves it as a cookie on the client.&lt;&#x2F;li&gt;
+&lt;li&gt;The client reads the cookie (the cookie needs to have httpOnly=false) and attaches it to the request (hidden input, header, queryparam).&lt;&#x2F;li&gt;
+&lt;li&gt;The server has access to both the cookie and the attached parameter and only approves requests that have both.&lt;&#x2F;li&gt;
+&lt;li&gt;A pure XSRF attack is thwarted because it can&#x27;t read cookies that are from another domain, and you should have made sure guessing your generated id is hard.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;This attack is still subject to XSS + XSRF because the XSS would be able to read your cookie. Dad&#x27;s getting rekt again.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;cross-origin-resource-sharing-cors&quot;&gt;Cross-origin resource sharing (CORS)&lt;&#x2F;h1&gt;
+&lt;p&gt;Since I mentioned CORS a few times, here&#x27;s the lowdown:&lt;&#x2F;p&gt;
+&lt;p&gt;CORS is used when a site is including e.g. images from a domain outside the
+domain from which the request originated. This is useful. Some servers might
+set &lt;code&gt;Access-Control-Allow-Origin: *&lt;&#x2F;code&gt;, e.g. the server serving google&#x27;s fonts:
+&lt;code&gt;&amp;lt;link href=&#x27;https:&#x2F;&#x2F;fonts.googleapis.com&#x2F;css?family=Open+Sans&#x27; rel=&#x27;stylesheet&#x27; type=&#x27;text&#x2F;css&#x27;&amp;gt;&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;somewhat-related-reading&quot;&gt;Somewhat related reading&lt;&#x2F;h1&gt;
+&lt;p&gt;Some stuff I stumbled across in this recent quest for knowledge:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;auth0.com&#x2F;blog&#x2F;2016&#x2F;05&#x2F;31&#x2F;cookies-vs-tokens-definitive-guide&quot;&gt;Auth0 - Cookies vs Tokens: The Definitive Guide&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;stormpath.com&#x2F;blog&#x2F;where-to-store-your-jwts-cookies-vs-html5-web-storage&quot;&gt;Stormpath - Where to Store your JWTs – Cookies vs HTML5 Web Storage&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Furthermore, you should see what some people that are probably smarter, more structured,
+and likely prettier than me had to say:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Cross-site_scripting&quot;&gt;Wikipedia: Cross-site scripting&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Cross-site_request_forgery&quot;&gt;Wikipedia: Cross-site request forgery&lt;&#x2F;a&gt; (According to this article CSRF is &amp;quot;sometimes pronounced sea-surf&amp;quot; - &lt;a href=&quot;https:&#x2F;&#x2F;www.google.se&#x2F;search?q=wat&quot;&gt;wat&lt;&#x2F;a&gt;)&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>Necessary macOS system configuration</title>
+		<published>2015-10-29T00:00:00+00:00</published>
+		<updated>2015-10-29T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/macos-system-configuration/" type="text/html"/>
+		<id>https://bes.github.io/blog/macos-system-configuration/</id>
+		<content type="html">&lt;p&gt;macOS doesn&#x27;t pull its own weight, at least not in a standard
+configuration. There are a number of apps that need to be
+installed. Some of them are free, others are not.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;ul&gt;
+&lt;li&gt;2020-10-27 Updated this guide, added section on CursorSense, &lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Take some time to read &lt;a href=&quot;https:&#x2F;&#x2F;bes.github.io&#x2F;blog&#x2F;macos-keyboard-for-windows-linux&#x2F;&quot;&gt;my guide on keyboard settings for windows &amp;amp; linux users&lt;&#x2F;a&gt; first.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;goals&quot;&gt;Goals&lt;&#x2F;h1&gt;
+&lt;ol&gt;
+&lt;li&gt;Let you maximize individual windows for any app.&lt;&#x2F;li&gt;
+&lt;li&gt;Send a window to a specific half, or quarter of the screen.&lt;&#x2F;li&gt;
+&lt;li&gt;Turn on&#x2F;off&#x2F;tweak mouse acceleration.&lt;&#x2F;li&gt;
+&lt;li&gt;Increase keyboard repeat rate.&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;h1 id=&quot;sizeup&quot;&gt;SizeUp&lt;&#x2F;h1&gt;
+&lt;p&gt;This app is essential. It&#x27;s one of the few apps that are actually worth paying for.
+In all honesty, I don&#x27;t think that a simple thing like maximize &#x2F; send to half &#x2F; send to
+quarter should need a paid third party app to work.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;http:&#x2F;&#x2F;www.irradiatedsoftware.com&#x2F;sizeup&#x2F;&quot;&gt;Throw your cash at SizeUp&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Goals one &amp;amp; two achieved.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;cursorsense&quot;&gt;CursorSense&lt;&#x2F;h1&gt;
+&lt;p&gt;CursorSense is really good, and I don&#x27;t mind paying for it actually.
+It lets you configure acceleration and sensitivity very precisely, and
+it can save a number of &amp;quot;favorite settings&amp;quot; per input device.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;http:&#x2F;&#x2F;www.plentycom.jp&#x2F;en&#x2F;cursorsense&#x2F;download.php&quot;&gt;Get CursorSense now&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Goal three achieved.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;keyboard-repeat-rate&quot;&gt;Keyboard repeat rate&lt;&#x2F;h1&gt;
+&lt;p&gt;Change the keyboard repeat rate&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;code class=&quot;language-shell script&quot; data-lang=&quot;shell script&quot;&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;defaults write -g KeyRepeat -float 1.8
+defaults write -g InitialKeyRepeat -int 15
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;You might have to sign out or restart your computer before
+the settings take effect.&lt;&#x2F;p&gt;
+&lt;p&gt;All goals achieved ★&lt;&#x2F;p&gt;
+&lt;p&gt;Have some tea.&lt;&#x2F;p&gt;
+</content>
+	</entry>
+	<entry xml:lang="en">
+		<title>macOS keyboard settings for Windows &amp; Linux users</title>
+		<published>2015-10-18T00:00:00+00:00</published>
+		<updated>2015-10-18T00:00:00+00:00</updated>
+		<link href="https://bes.github.io/blog/macos-keyboard-for-windows-linux/" type="text/html"/>
+		<id>https://bes.github.io/blog/macos-keyboard-for-windows-linux/</id>
+		<content type="html">&lt;p&gt;If you&#x27;re like me, and you&#x27;re coming from two decades of using Windows and Linux,
+you might want to keep using the keyboard shortcuts you&#x27;re used to.&lt;&#x2F;p&gt;
+&lt;p&gt;You might also be a programmer. In that case: even better.&lt;&#x2F;p&gt;
+&lt;span id=&quot;continue-reading&quot;&gt;&lt;&#x2F;span&gt;
+&lt;ul&gt;
+&lt;li&gt;2015-10-18: This guide was written for OSX 10.11 (El Capitan).&lt;&#x2F;li&gt;
+&lt;li&gt;2017-04-14: Updated for macOS 10.12 (Sierra)&lt;&#x2F;li&gt;
+&lt;li&gt;2020-10-27: Removed broken links and updated examples for macOS Catalina.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;goals&quot;&gt;Goals&lt;&#x2F;h1&gt;
+&lt;ol&gt;
+&lt;li&gt;Use a Swedish keyboard, with close-to-identical keybindings.&lt;&#x2F;li&gt;
+&lt;li&gt;Use Ctrl+S (Save), Ctrl+C (Copy), Ctrl+V (Paste), etc.
+(Clarification: Actually Cmd+Key but Cmd is in the same position as Ctrl).&lt;&#x2F;li&gt;
+&lt;li&gt;Use the same old finger setting you&#x27;re used to, that includes AltGr
+(or whatever key, but placed where AltGr used to be) for writing the usual.
+characters &lt;code&gt;{}[]\|&lt;&#x2F;code&gt; etc. (I know this is very specific to the Swedish programming layout).&lt;&#x2F;li&gt;
+&lt;li&gt;Use Ctrl+C to abort execution in a terminal (I&#x27;ll be using iTerm).&lt;&#x2F;li&gt;
+&lt;li&gt;Improve the Alt+Tab experience.&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;h1 id=&quot;swedish-windows-linux-style-keyboard&quot;&gt;Swedish Windows&#x2F;Linux-style keyboard&lt;&#x2F;h1&gt;
+&lt;p&gt;I built a keyboard layout using &lt;a href=&quot;http:&#x2F;&#x2F;scripts.sil.org&#x2F;ukelele&quot;&gt;Ukelele&lt;&#x2F;a&gt;.
+It&#x27;s available as a &lt;a href=&quot;https:&#x2F;&#x2F;gist.github.com&#x2F;bes&#x2F;0b634c1f1cbb2e40d1ba91a94990f2fb&quot;&gt;GitHub gist&lt;&#x2F;a&gt;.
+Just follow the instructions in the README!&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;use-ctrl-c-to-copy-instead-of-command-c-etc&quot;&gt;Use Ctrl+C to copy instead of Command+C, etc.&lt;&#x2F;h1&gt;
+&lt;p&gt;Our goal isn&#x27;t explicitly to use Ctrl+C, Ctrl+S, etc. It&#x27;s rather to let you use
+the same old hand&#x2F;finger positions you are used to. Maybe even your trusty old windows&#x2F;linux keyboard.
+That means, Command is going to be moved to Ctrl, Ctrl to Option, and Option to Command.
+That way, we&#x27;re 90% there.&lt;&#x2F;p&gt;
+&lt;p&gt;Now we&#x27;re going to remap the keyboard modifier keys using System Preferences.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;System Preferences&lt;&#x2F;code&gt; &amp;gt; &lt;code&gt;Keyboard&lt;&#x2F;code&gt; &amp;gt; Press &lt;code&gt;Modifier Keys&lt;&#x2F;code&gt; Button &amp;gt; Remap to:&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;strong&gt;For an Apple keyboard&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;table&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Control Key
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8963;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                =&gt;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8984; Command
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Option Key
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8997;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                =&gt;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8963; Control
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                Command Key
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8984;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                =&gt;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8997; Option
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+    &lt;&#x2F;tbody&gt;
+&lt;&#x2F;table&gt;
+&lt;p&gt;&lt;strong&gt;For a Windows&#x2F;Linux keyboard&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;table&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                &amp;#8963;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Control Key
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                =&gt;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8984;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Command
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                &amp;#8997;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Option Key
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                =&gt;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8997;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Option
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+        &lt;tr&gt;
+            &lt;td style=&quot;font-style: italic&quot;&gt;
+                &amp;#8984;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Command Key
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                =&gt;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                &amp;#8963;
+            &lt;&#x2F;td&gt;
+            &lt;td&gt;
+                Control
+            &lt;&#x2F;td&gt;
+        &lt;&#x2F;tr&gt;
+    &lt;&#x2F;tbody&gt;
+&lt;&#x2F;table&gt;
+&lt;p&gt;Since macOS uses Command as the base modifier, we are one step closer to emulating
+the behavior in Windows&#x2F;Linux.&lt;&#x2F;p&gt;
+&lt;p&gt;Goals two and three achieved!&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;use-ctrl-c-to-abort-execution-in-a-terminal&quot;&gt;Use Ctrl+C to abort execution in a terminal.&lt;&#x2F;h1&gt;
+&lt;p&gt;I use iTerm2 for macOS, and you&#x27;re going to have to change around some stuff
+for the key bindings.&lt;&#x2F;p&gt;
+&lt;p&gt;Go to &lt;code&gt;Preferences&lt;&#x2F;code&gt; &amp;gt; &lt;code&gt;Keys&lt;&#x2F;code&gt; &amp;gt; Remap to:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;Control key = Left Command&lt;&#x2F;li&gt;
+&lt;li&gt;Left Option key = Left Option&lt;&#x2F;li&gt;
+&lt;li&gt;Right Option key = Right Option&lt;&#x2F;li&gt;
+&lt;li&gt;Left Command key = Control&lt;&#x2F;li&gt;
+&lt;li&gt;Right Command key = Control&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h1 id=&quot;improve-the-alt-tab-experience&quot;&gt;Improve the Alt+Tab experience&lt;&#x2F;h1&gt;
+&lt;p&gt;There are two things going on. Since we&#x27;ve moved Command to Control, we can&#x27;t press
+&amp;quot;Alt+Tab&amp;quot; anymore (Command+Tab duh), it&#x27;s Control+Tab now. We don&#x27;t want that.
+Also, Command+Tab for app switching in macOS is not a good experience for multi-window apps.&lt;&#x2F;p&gt;
+&lt;p&gt;You&#x27;ll need to install &lt;a href=&quot;https:&#x2F;&#x2F;bahoom.com&#x2F;hyperswitch&quot;&gt;Hyperswitch&lt;&#x2F;a&gt;.
+Once installed, set Option+Tab as the Window switcher key. Alt+Tab is back!
+It remembers your app history as long as you don&#x27;t click on any Dock icons.&lt;&#x2F;p&gt;
+</content>
+	</entry>
+</feed>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    <title>A four-hour rabbit hole into (mostly) generated Rust code</title>
+    <meta name="description" content="">
+
+    <link rel="stylesheet" href="https:&#x2F;&#x2F;bes.github.io&#x2F;main.css">
+
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="https://bes.github.io/atom.xml">
+    
+
+    
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to content</a>
+    <div class="top-header">
+        <div>
+            <a href="https:&#x2F;&#x2F;bes.github.io">Domain Specific Language</a>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+<h1 class="title">
+    A four-hour rabbit hole into (mostly) generated Rust code
+</h1>
+
+    <div class="article-info">
+        
+        <div class="article-date">25 October 2020 · reading time 8 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://bes.github.io/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://bes.github.io/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://bes.github.io/tags/debugging/">debugging</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+<p><p>There are no official Rust libraries for Google APIs available yet,
+but there are some (mostly) auto generated ones that are fine to use
+albeit a bit verbose.</p>
+<p>I've previously used <a href="https://github.com/google-apis-rs">google-apis-rs</a>
+successfully when I needed to read <a href="https://cloud.google.com/secret-manager">Secret Manager</a>
+secrets for a side project.</p>
+<p>Hot on the heels of <a href="https://bes.github.io/blog/thoughts-on-ethical-software/">Thoughts on ethical software</a>
+I decided to convert the same project from using <code>MySQL</code> to the snazzily named
+<a href="https://cloud.google.com/datastore/docs">Firestore in Datastore mode</a>.</p>
+<p>Let's go down the rabbit 🐇 hole 🕳.</p>
+<span id="continue-reading"></span><h1 id="an-error-appears">An error appears</h1>
+<p>His terminal cursor blinked with the cold determination of an experienced murderer,
+many years since his first kill, but never caught.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell script" data-lang="shell script"><span style="color:#c0c5ce;">Reqwest Error: error decoding response body: invalid base64 input at line 3 column 1
+</span></code></pre>
+<p><em>Just kidding</em>. This is not a murder story. I'm not kidding about the error though.</p>
+<p>Some code to start things off.</p>
+<p>Some of the code below, like <code>crate::accesstoken::GoogleToken</code> isn't available publicly,
+but it's based on <code>gcp_auth = &quot;0.1.4&quot;</code>. If you want, contact me, and I'll probably
+send you the code. </p>
+<pre style="background-color:#2b303b;">
+<code class="language-toml" data-lang="toml"><span style="color:#c0c5ce;">[dependencies]
+</span><span style="color:#bf616a;">google-datastore1 </span><span style="color:#c0c5ce;">= { </span><span style="color:#bf616a;">git </span><span style="color:#c0c5ce;">= &quot;</span><span style="color:#a3be8c;">https://github.com/google-apis-rs/generated</span><span style="color:#c0c5ce;">&quot; }
+</span></code></pre><pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use crate</span><span style="color:#c0c5ce;">::accesstoken::GoogleToken;
+</span><span style="color:#b48ead;">use </span><span style="color:#c0c5ce;">eyre::{Result, WrapErr};
+</span><span style="color:#b48ead;">use </span><span style="color:#c0c5ce;">google_datastore1::Client;
+</span><span style="color:#b48ead;">use </span><span style="color:#c0c5ce;">google_datastore1::schemas::{BeginTransactionRequest, BeginTransactionResponse};
+
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">datastore_transaction_test</span><span style="color:#c0c5ce;">() -&gt; Result&lt;()&gt; {
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> gtoken = GoogleToken::get_token().</span><span style="color:#96b5b4;">wrap_err_with</span><span style="color:#c0c5ce;">(|| &quot;</span><span style="color:#a3be8c;">Could not get google token</span><span style="color:#c0c5ce;">&quot;)?;
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> client = Client::new(gtoken);
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> projects = client.</span><span style="color:#96b5b4;">projects</span><span style="color:#c0c5ce;">();
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> builder = projects.</span><span style="color:#96b5b4;">begin_transaction</span><span style="color:#c0c5ce;">(
+        BeginTransactionRequest {
+            transaction_options: None,
+        },
+        &quot;</span><span style="color:#a3be8c;">some-google-cloud-project-name</span><span style="color:#c0c5ce;">&quot;,
+    );
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> transaction: BeginTransactionResponse = builder.</span><span style="color:#96b5b4;">execute</span><span style="color:#c0c5ce;">()?;
+
+    </span><span style="color:#65737e;">// ...
+
+    </span><span style="color:#c0c5ce;">Ok(())
+}
+</span></code></pre><h1 id="where-to-start">Where to start?</h1>
+<p>Soul smashing. I only have a few precious hours per day to code, and now I have
+a decision to make. Do I give up? Do I find another library?</p>
+<p>Resolve and dedication is the name of the game. Plus most of the time it's something
+silly like making the wrong assumptions about the library I'm trying to use. E.g.
+is my authentication token correct? Did I give the wrong project name?</p>
+<h1 id="is-the-request-good">Is the request good?</h1>
+<p>I'm using CLion which includes Rust debugging. The first thing I want to know is,
+am I making an error in my request?</p>
+<p>Let's step into <code>builder.execute()</code> and see what it is hiding.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">execute</span><span style="color:#c0c5ce;">&lt;T&gt;(</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">) -&gt; Result&lt;T, crate::Error&gt;
+</span><span style="color:#b48ead;">where
+</span><span style="color:#c0c5ce;">    T: ::serde::de::DeserializeOwned + ::google_field_selector::FieldSelector,
+{
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> fields = ::google_field_selector::to_string::&lt;T&gt;();
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> fields: Option&lt;String&gt; = </span><span style="color:#b48ead;">if</span><span style="color:#c0c5ce;"> fields.</span><span style="color:#96b5b4;">is_empty</span><span style="color:#c0c5ce;">() {
+        None
+    } </span><span style="color:#b48ead;">else </span><span style="color:#c0c5ce;">{
+        Some(fields)
+    };
+    </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">execute_with_fields</span><span style="color:#c0c5ce;">(fields)
+}
+</span></code></pre>
+<p>It's just collecting some parameters and calling <code>execute_with_fields</code></p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">execute_with_fields</span><span style="color:#c0c5ce;">&lt;T, F&gt;(</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">, </span><span style="color:#bf616a;">fields</span><span style="color:#c0c5ce;">: Option&lt;F&gt;) -&gt; Result&lt;T, crate::Error&gt;
+</span><span style="color:#b48ead;">where
+</span><span style="color:#c0c5ce;">    T: ::serde::de::DeserializeOwned,
+    F: Into&lt;String&gt;,
+{
+    </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.fields = fields.</span><span style="color:#96b5b4;">map</span><span style="color:#c0c5ce;">(Into::into);
+    </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">_execute</span><span style="color:#c0c5ce;">()
+}
+</span></code></pre>
+<p>Same story, let's go into <code>_execute</code></p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">_execute</span><span style="color:#c0c5ce;">&lt;T&gt;(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">) -&gt; Result&lt;T, crate::Error&gt;
+</span><span style="color:#b48ead;">where
+</span><span style="color:#c0c5ce;">    T: ::serde::de::DeserializeOwned,
+{
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> req = </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">_request</span><span style="color:#c0c5ce;">(&amp;</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">_path</span><span style="color:#c0c5ce;">())?;
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> req = req.</span><span style="color:#96b5b4;">json</span><span style="color:#c0c5ce;">(&amp;</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.request);
+    Ok(</span><span style="color:#b48ead;">crate</span><span style="color:#c0c5ce;">::error_from_response(req.</span><span style="color:#96b5b4;">send</span><span style="color:#c0c5ce;">()?)?.</span><span style="color:#96b5b4;">json</span><span style="color:#c0c5ce;">()?)
+}
+</span></code></pre>
+<p><code>crate::error_from_response(req.send()?)?.json()?</code> looks interesting!
+<code>.json()</code> specifically sound like something that takes a string (or something)
+and gives us json (of type <code>::serde::de::DeserializeOwned</code>).</p>
+<p><code>.json()</code> takes us out of the <code>google-datastore1</code> crate and into <code>reqwest</code>, and the method
+looks like this:</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">json</span><span style="color:#c0c5ce;">&lt;T: DeserializeOwned&gt;(</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">) -&gt; crate::Result&lt;T&gt; {
+    wait::timeout(</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.inner.</span><span style="color:#96b5b4;">json</span><span style="color:#c0c5ce;">(), </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.timeout).</span><span style="color:#96b5b4;">map_err</span><span style="color:#c0c5ce;">(|</span><span style="color:#bf616a;">e</span><span style="color:#c0c5ce;">| </span><span style="color:#b48ead;">match</span><span style="color:#c0c5ce;"> e {
+        wait::Waited::TimedOut(e) =&gt; </span><span style="color:#b48ead;">crate</span><span style="color:#c0c5ce;">::error::decode(e),
+        wait::Waited::Inner(e) =&gt; e,
+    })
+}
+</span></code></pre>
+<p>Cool. <code>self.inner.json()</code> looks juicy. Let's dig into that.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub</span><span style="color:#c0c5ce;"> async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">json</span><span style="color:#c0c5ce;">&lt;T: DeserializeOwned&gt;(</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">) -&gt; crate::Result&lt;T&gt; {
+    </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> full = </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">bytes</span><span style="color:#c0c5ce;">().await?;
+
+    serde_json::from_slice(&amp;full).</span><span style="color:#96b5b4;">map_err</span><span style="color:#c0c5ce;">(</span><span style="color:#b48ead;">crate</span><span style="color:#c0c5ce;">::error::decode)
+}
+</span></code></pre>
+<p>This 👆 is the sixth code block in this blog post, and let's be honest
+you probably didn't read any of them. But this is where the fun starts,
+so pay attention. <code>self.bytes()</code> returns a type called <code>Result&lt;Bytes&gt;</code>
+which I'm guessing are going to be bytes :).</p>
+<p>What I want to do in this section is to see if the response <em>from</em>
+Cloud Datastore is malformed. I want to know where that error message
+is coming from, and so far I haven't got a clue.</p>
+<p>I'll place a breakpoint on the last line in the method using CLion's
+built in LLVM debugger.</p>
+<p>Now the first time the breakpoint is hit, in my case it's just my <code>GoogleToken</code>
+being deserialized. I press <code>Resume Program</code> and wait for the second one.</p>
+<a class="image" href="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;breakpoint_1.png">
+    <img src="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;breakpoint_1.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>I just want to know what's in the <code>&amp;full</code> reference. I could do that in
+a couple of ways. The first one is to just change the code right there
+to print out <code>&amp;full</code> on the command line. Let's try that.</p>
+<a class="image" href="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;protected_file_question.png">
+    <img src="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;protected_file_question.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Now the method looks like this</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">pub</span><span style="color:#c0c5ce;"> async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">json</span><span style="color:#c0c5ce;">&lt;T: DeserializeOwned&gt;(</span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">) -&gt; crate::Result&lt;T&gt; {
+        </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> full = </span><span style="color:#bf616a;">self</span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">bytes</span><span style="color:#c0c5ce;">().await?;
+
+        println!(&quot;</span><span style="color:#d08770;">{:#?}</span><span style="color:#c0c5ce;">&quot;, String::from_utf8(full.</span><span style="color:#96b5b4;">to_vec</span><span style="color:#c0c5ce;">()));
+        serde_json::from_slice(&amp;full).</span><span style="color:#96b5b4;">map_err</span><span style="color:#c0c5ce;">(</span><span style="color:#b48ead;">crate</span><span style="color:#c0c5ce;">::error::decode)
+    }
+</span></code></pre>
+<p>Unfortunately CLion doesn't pick up on this change automatically,
+I have to run <code>cargo clean</code> first. If it compiles, and I want to
+make a change, I have to run <code>cargo clean</code> again. <em>Maybe there's a better way</em>?
+I wonder while waiting for everything to compile.
+I wait. For a long time. Finally my terminal comes to life.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell script" data-lang="shell script"><span style="color:#c0c5ce;">&quot;{\  \&quot;transaction\&quot;: \&quot;Ed4MD3Hb1vERIlkA3ModsqJ/tO7aMMgajDXq&lt;MORE_STUFF...&gt;==\&quot;\n}\n&quot;
+</span></code></pre>
+<p>Great! The API call works. But before continuing, I have to know - can this
+be made easier? Fortunately, it can! We can use the <code>Memory View</code> feature in
+CLion. Just expand <code>full</code> in the <code>Variables</code> view, then right click on <code>ptr</code>
+and select <code>Show in Memory View</code>:</p>
+<a class="image" href="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;breakpoint_2.png">
+    <img src="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;breakpoint_2.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>And there it is, hiding in plain sight, my <code>transaction</code> in glorious
+hexadecimal but also in inglorious text.</p>
+<h1 id="where-is-the-error">Where is the error?</h1>
+<p>I know that the value in the <code>json()</code> method should be at least readable
+by <code>serde</code>, and I think that <code>transaction</code> looks like valid Base64, at least
+it's got the signature Base64 <code>==</code> padding on the end.</p>
+<p>I run the Base64 through my trusty terminal</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell script" data-lang="shell script"><span style="color:#c0c5ce;">test% pbpaste | base64 -D
+����O_a�0ۉΗ��j�y�ϵ��\]�Ϧ�;A�
+`@@Yc�ԏ�Y�f�C��с(6���iR��%
+</span></code></pre>
+<p>Looks legit :). What happens if I throw in an invalid character like <code>*</code>?</p>
+<pre style="background-color:#2b303b;">
+<code class="language-shell script" data-lang="shell script"><span style="color:#c0c5ce;">test% pbpaste | base64 -D
+Invalid character in input stream.
+</span></code></pre>
+<p>My <code>transaction</code> is probably OK.</p>
+<p>I continue stepping into <code>serde_json::from_slice</code> and from there into
+<code>from_trait(read::SliceRead::new(v))</code>. It's just generic methods and macros
+all the way down, and honestly not many things to use to make sense of what
+might be happening.</p>
+<p>I know that <code>serde</code> is trying to deserialize JSON and I know that Rust
+can pick implementations based on the return value of a method. I
+probably need to go back to where it all started.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> transaction: BeginTransactionResponse = builder.</span><span style="color:#96b5b4;">execute</span><span style="color:#c0c5ce;">()?;
+</span></code></pre>
+<p>Let's see what <code>BeginTransactionResponse</code> is hiding!</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span style="color:#c0c5ce;">BeginTransactionResponse {
+    #[</span><span style="color:#bf616a;">doc </span><span style="color:#c0c5ce;">= &quot;</span><span style="color:#a3be8c;">The transaction identifier (always present).</span><span style="color:#c0c5ce;">&quot;]
+    #[</span><span style="color:#bf616a;">serde</span><span style="color:#c0c5ce;">(
+        rename = &quot;</span><span style="color:#a3be8c;">transaction</span><span style="color:#c0c5ce;">&quot;,
+        default,
+        skip_serializing_if = &quot;</span><span style="color:#a3be8c;">std::option::Option::is_none</span><span style="color:#c0c5ce;">&quot;
+    )]
+    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">transaction</span><span style="color:#c0c5ce;">: ::std::option::Option&lt;::google_api_bytes::Bytes&gt;,
+}
+</span></code></pre>
+<p>What's this <code>Bytes</code> thing? Go to Declaration, please.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#c0c5ce;">#[</span><span style="color:#bf616a;">derive</span><span style="color:#c0c5ce;">(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+</span><span style="color:#b48ead;">pub struct </span><span style="color:#c0c5ce;">Bytes(pub Vec&lt;</span><span style="color:#b48ead;">u8</span><span style="color:#c0c5ce;">&gt;);
+</span></code></pre>
+<p>It's a newtype over <code>Vec&lt;u8&gt;</code>. Clicking the gutter icon (green &quot;I&quot;) might help.</p>
+<a class="image" href="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;gutter_impls.png">
+    <img src="&#x2F;images&#x2F;blog&#x2F;2020-10-25&#x2F;gutter_impls.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>There's an implementation for <code>Deserialize&lt;'de&gt; for Bytes</code>. Let's check it out.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl</span><span style="color:#c0c5ce;">&lt;</span><span style="color:#b48ead;">&#39;de</span><span style="color:#c0c5ce;">&gt; Deserialize&lt;</span><span style="color:#b48ead;">&#39;de</span><span style="color:#c0c5ce;">&gt; </span><span style="color:#b48ead;">for </span><span style="color:#c0c5ce;">Bytes {
+    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">deserialize</span><span style="color:#c0c5ce;">&lt;D&gt;(</span><span style="color:#bf616a;">deserializer</span><span style="color:#c0c5ce;">: D) -&gt; ::std::result::Result&lt;Bytes, </span><span style="color:#b48ead;">D::</span><span style="color:#c0c5ce;">Error&gt;
+    </span><span style="color:#b48ead;">where
+</span><span style="color:#c0c5ce;">        D: Deserializer&lt;</span><span style="color:#b48ead;">&#39;de</span><span style="color:#c0c5ce;">&gt;,
+    {
+        </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> encoded = String::deserialize(deserializer)?;
+        </span><span style="color:#b48ead;">let</span><span style="color:#c0c5ce;"> decoded = </span><span style="color:#d08770;">BASE64_CFG
+            </span><span style="color:#c0c5ce;">.</span><span style="color:#96b5b4;">decode</span><span style="color:#c0c5ce;">(&amp;encoded)
+            .</span><span style="color:#96b5b4;">map_err</span><span style="color:#c0c5ce;">(|_| ::serde::de::Error::custom(&quot;</span><span style="color:#a3be8c;">invalid base64 input</span><span style="color:#c0c5ce;">&quot;))?;
+        Ok(Bytes(decoded))
+    }
+}
+</span></code></pre>
+<p>That error looks familiar. If you didn't already guess it, I'm looking straight at
+that <code>BASE64_CFG</code> and wondering what that does.</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span style="color:#c0c5ce;">radix64::</span><span style="color:#d08770;">URL_SAFE </span><span style="color:#c0c5ce;">as </span><span style="color:#d08770;">BASE64_CFG</span><span style="color:#c0c5ce;">;
+</span></code></pre>
+<p>And <code>radix64::URL_SAFE</code> is...</p>
+<pre style="background-color:#2b303b;">
+<code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Encode and Decode using the URL safe characer set with padding.
+///
+/// See [RFC 4648](https://tools.ietf.org/html/rfc4648#section-5)
+</span><span style="color:#b48ead;">pub const </span><span style="color:#d08770;">URL_SAFE</span><span style="color:#c0c5ce;">: UrlSafe = UrlSafe;
+</span></code></pre>
+<p>Is it possible that some Google APIs use UrlSafe Base64 encoding, and
+others don't? It's impossible to tell from the documentation. Some
+APIs do seem to specifically say &quot;Use URL safe Base64&quot;, but most don't.</p>
+<p>I once again decide to edit a file. Yeehaw. Change <code>use radix64::URL_SAFE as BASE64_CFG;</code>
+to <code>use radix64::STD as BASE64_CFG;</code>. Recompile.</p>
+<p>It works! No more errors.</p>
+<h1 id="be-a-good-oss-citizen">Be a good OSS citizen</h1>
+<p>The least I can do is to report the issue. Hopefully the repository is
+still maintained, and hopefully the maintainers appreciate a bug report.
+Said and done, the bug report is here.
+<a href="https://github.com/google-apis-rs/generated/issues/3">https://github.com/google-apis-rs/generated/issues/3</a>.
+And a fair bit shorter than this blog post.</p>
+</p>
+
+        </main>
+        <footer>
+            <p>
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> |
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> |
+                <a href="/atom.xml">Feed</a>
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
