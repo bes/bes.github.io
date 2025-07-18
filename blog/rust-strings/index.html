@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/rust-strings/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Strings in Rust —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Strings in Rust —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Strings in Rust —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="During the last 20 years I have used a number of garbage collected and reference
+counted programming languages. All of them have a single type for representing
+strings. Rust has two types of strings that can be stored in three different
+ways.
+I want to shortly illustrate how Rust's strings interact with the heap, with the
+stack, and with the data segment of your binary, as well as shortly explain what
+those things are." />
+        <meta name="twitter:description" content="During the last 20 years I have used a number of garbage collected and reference
+counted programming languages. All of them have a single type for representing
+strings. Rust has two types of strings that can be stored in three different
+ways.
+I want to shortly illustrate how Rust's strings interact with the heap, with the
+stack, and with the data segment of your binary, as well as shortly explain what
+those things are.">
+        <meta property="og:description" content="During the last 20 years I have used a number of garbage collected and reference
+counted programming languages. All of them have a single type for representing
+strings. Rust has two types of strings that can be stored in three different
+ways.
+I want to shortly illustrate how Rust's strings interact with the heap, with the
+stack, and with the data segment of your binary, as well as shortly explain what
+those things are." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Strings in Rust
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">14 March 2021 · reading time 9 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/programming/">programming</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/heap/">heap</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/stack/">stack</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/string/">string</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#stack-and-heap">Stack and heap</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#three-types-of-string-storage">Three types of string storage</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#application-binary-segments">Application binary segments</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#two-types-of-strings">Two types of strings</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#three-types-of-string-storage-again">Three types of string storage, again</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#a-helpful-tip">A helpful tip</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-strings/#final-words">Final words</a>
+        </li>
+        
+    </ol>
+    
+
+<p>During the last 20 years I have used a number of garbage collected and reference
+counted programming languages. All of them have a single type for representing
+strings. Rust has two types of strings that can be stored in three different
+ways.</p>
+<p>I want to shortly illustrate how Rust's strings interact with the heap, with the
+stack, and with the data segment of your binary, as well as shortly explain what
+those things are.</p>
+<span id="continue-reading"></span>
+<p>Java, Swift, TypeScript, and Go all have string types that make it irrelevant if
+they're stored on the stack or on the heap. A Java string is always heap
+allocated, while a Go string may be stack or heap allocated. The point is that
+you don't need to know: the way you use the type doesn't change.</p>
+<p>Rust doesn't work quite that way. In general, the programmer needs to choose
+between types that store data either on the stack or on the heap. The choice
+is generally speaking a trade-off between speed and versatility.</p>
+<div class="note">
+    <div class="note-title">Scope</div>
+    <p>Please note that this post does not touch upon the topics of UTF8, UTF8 validity,
+and so on. Neither does it talk about lifetimes, except for <code>'static</code>, which is
+not explained further. This post basically glosses over everything that is not
+needed to understand <code>String</code> or <code>str</code>.</p>
+
+</div>
+<p>We need to take a small detour.</p>
+<h1 id="stack-and-heap">Stack and heap</h1>
+<p>This is a conceptual view of the stack and heap parts of program memory.
+This is probably a virtual memory if you're on a laptop computer or physical
+memory if you're on a small embedded hardware without an operating system.</p>
+<pre class="z-code"><code><span class="z-text z-plain">                  A view of program memory in a made up 16 bit computer 
+</span><span class="z-text z-plain"> low memory addresses   ======================================= addr[0x00F0] 
+</span><span class="z-text z-plain">                        |               HEAP                  |
+</span><span class="z-text z-plain">                        | typically grows towards higher addr |
+</span><span class="z-text z-plain">                        |                 |                   |
+</span><span class="z-text z-plain">                        |                 ˇ                   |
+</span><span class="z-text z-plain">                        |/////////////////////////////////////|
+</span><span class="z-text z-plain">                        |                 ^                   |
+</span><span class="z-text z-plain">                        |                 |                   |
+</span><span class="z-text z-plain">                        | typically grows towards lower addr  |
+</span><span class="z-text z-plain">                        |               STACK                 |
+</span><span class="z-text z-plain"> high memory addresses  ======================================= addr[0xFFFF] 
+</span></code></pre>
+<p>The stack and heap memory is structured in a way that they grow towards each
+other. In my examples I use a made up 16 bit memory architecture. That means
+that pointers are 16 bits and registers are 16 bits as well.</p>
+<pre class="z-code"><code><span class="z-text z-plain">                        PROGRAM                      MEMORY
+</span><span class="z-text z-plain">use std::str;                           =====================================
+</span><span class="z-text z-plain">fn main() {                             |             HEAP                  |
+</span><span class="z-text z-plain">    // A stack allocated i16            |                                   |
+</span><span class="z-text z-plain">+-- let x: i16 = 5;                     |                                   |
+</span><span class="z-text z-plain">|                                       | addr[0x00F0] &lt;-----+              |
+</span><span class="z-text z-plain">|   // A heap allocated i16             | type: i16          |              |
+</span><span class="z-text z-plain">|   let y: Box&lt;i16&gt; = Box::new(5);      | value: 5           |              |
+</span><span class="z-text z-plain">|       |                               |                    |              |
+</span><span class="z-text z-plain">|       |                               |////////////////////|//////////////|
+</span><span class="z-text z-plain">|       |                               | addr[0xFFE0]       |              |
+</span><span class="z-text z-plain">|       |                               | type: Box&lt;i16&gt;     |              |
+</span><span class="z-text z-plain">|       +-------------------------------&gt; value: 0x00F0 -----+              |
+</span><span class="z-text z-plain">|                                       |                                   |
+</span><span class="z-text z-plain">|                                       | addr[0xFFF0]                      |
+</span><span class="z-text z-plain">|                                       | type: i16                         |
+</span><span class="z-text z-plain">+---------------------------------------&gt; value: 5                          |
+</span><span class="z-text z-plain">                                        |             STACK                 |
+</span><span class="z-text z-plain">}                                       =====================================
+</span></code></pre>
+<p>The program above illustrates the difference between putting something on the
+stack, which is immediately available to the function, since in some sense the
+current stack frame <em>is</em> the function. When something is put on the heap, we say
+that it's <em>boxed</em>. In this case the <code>Box</code> is essentialy just a stack allocated
+struct, that internally holds a pointer to the heap, where the actual data is
+stored. Illustrated by the <code>-&gt;</code> arrows above.</p>
+<h1 id="three-types-of-string-storage">Three types of string storage</h1>
+<p>A string in Rust can be stored in one of three ways:</p>
+<ul>
+<li>On the heap</li>
+<li>On the stack</li>
+<li>In the <code>data</code> segment of the application binary</li>
+</ul>
+<p>We need one more detour.</p>
+<h1 id="application-binary-segments">Application binary segments</h1>
+<p>The segments in a binary are often illustrated like this, please note that
+this is <em>after</em> loading the binary file from disk into main memory: the stack
+and heap segments aren't stored in the binary on disk.</p>
+<p>The <code>text</code> segment actually contains the compiled machine code, and the <code>data</code>
+segment contains application data found by the compiler while compiling.</p>
+<pre class="z-code"><code><span class="z-text z-plain">                                     SEGMENTS
+</span><span class="z-text z-plain">      low mem =============================================================
+</span><span class="z-text z-plain">              |                       .text                               |
+</span><span class="z-text z-plain">              |                contains machine code                      |
+</span><span class="z-text z-plain">              =============================================================
+</span><span class="z-text z-plain">              |                        .data                              |
+</span><span class="z-text z-plain">              | contains data known to the app binary at compile time     |
+</span><span class="z-text z-plain">              =============================================================
+</span><span class="z-text z-plain"> addr[0x00F0] |                         HEAP                              |
+</span><span class="z-text z-plain">              | contains dynamically allocated data created at run time   |
+</span><span class="z-text z-plain">              | * data that lives &quot;much&quot; longer than one function         |
+</span><span class="z-text z-plain">              | * data that is too big for the stack                      |
+</span><span class="z-text z-plain">              | * data that must live behind a pointer, i.e. unknown size |
+</span><span class="z-text z-plain">              |////////////////////////////////////////////////////////////
+</span><span class="z-text z-plain">              |                         STACK                             |
+</span><span class="z-text z-plain">              | contains memory allocated by functions at run time        |
+</span><span class="z-text z-plain">              | * data with a known size                                  |
+</span><span class="z-text z-plain"> addr[0xFFFF] | * data that mostly does not outlive the function itself   |
+</span><span class="z-text z-plain">     high mem =============================================================
+</span></code></pre>
+<p>In this case, the string <code>"abc"</code> has been found by the compiler and put in the
+<code>data</code> segment. When our function is run, the x variable points directly into
+the <code>data</code> segment, at the address where <code>"abc"</code> starts. Since the <code>&amp;str</code> also
+stores a length, the program will only read three characters when run.</p>
+<h1 id="two-types-of-strings">Two types of strings</h1>
+<h2 id="string">String</h2>
+<p>The first of the two types is <code>String</code> which is the heap allocated, growable,
+string type. It's growable, which means that unlike Java it's possible to change
+the string as long as there is enough room left. If there isn't enough room, it
+will expand its size automatically.</p>
+<p>A <code>String</code> may be owned, something like <code>let x: String = String::from("abc")</code>,
+or referenced <code>fn takes_string_ref(x: &amp;mut String)</code>.</p>
+<p><code>String</code> is implemented as a wrapper around <code>Vec&lt;u8&gt;</code>.</p>
+<h2 id="str">str</h2>
+<p>A <a href="https://doc.rust-lang.org/std/primitive.str.html">str</a> is simple, but also
+very very complicated. You can either accept the standard explanation without
+further questioning it, or you can read my take below 👇.</p>
+<p>A <code>str</code> is a <a href="https://doc.rust-lang.org/nomicon/exotic-sizes.html">Dynamically Sized Type</a>.
+Furthermore, it is a primitive type, and unlike <code>String</code> you can't find it in the
+standard library since it's a compiler internal type.</p>
+<p><code>str</code> is callad a "string slice". Unlike most other types you can NOT get an
+instance of a raw <code>str</code>. It is is most often seen with  its buddy Mr. Ampersand,
+as in: <code>&amp;str</code>. Other possibilities are <code>Rc&lt;str&gt;</code> and <code>Box&lt;str&gt;</code>. The use case
+for <code>Box&lt;str&gt;</code> <a href="https://users.rust-lang.org/t/use-case-for-box-str-and-string/8295/4">is that it doesn't contain</a>
+the <code>capacity</code> field of <code>String</code>, so it takes up less memory.</p>
+<p>Just like a <code>&amp;i64</code> is a reference to an actual <code>i64</code>, an <code>&amp;str</code> is a reference.
+But a reference to what? An <code>i64</code> can be stack allocated, so the <code>&amp;i64</code> is
+a pointer to some other place in the stack. A <code>Box&lt;i64&gt;</code> is heap allocated,
+and you can get a <code>&amp;i64</code> reference to that one, too.</p>
+<p>But the <code>&amp;i64</code> isn't just a pointer, it has an implicit size too.
+The compiler knows that since the type is 64 bits, it knows how much data to read
+when reading the pointed-to reference. But what size is an <code>&amp;str</code>?</p>
+<div class="note">
+    <div class="note-title">Aside</div>
+    <p>Since the Rust 2018 edition, we need to put references to trait objects,
+which have an unknown compile-time size,
+behind the <code>dyn</code> keyword: <code>&amp;dyn MyTrait</code>. That way the compiler knows to
+generate a vtable (a table of function pointers) that the runtime can use to find
+the functions of the actual underlying struct. <code>dyn MyTrait</code> is a Dynamically
+Sized Type too, and it also has to be pointed to by a <code>&amp;</code> reference, or be
+boxed somehow: e.g. <code>Box&lt;dyn MyTrait&gt;</code>.</p>
+
+</div>
+<p>But what about <code>&amp;str</code>? A pointer to a string isn't enough, the computer must know
+how many bytes of data to read. Fortunately, it does contain the length too,
+just as a <code>&amp;[u8]</code> reference knows how many bytes to read behind the pointer.</p>
+<p>I think there are nice similarities between how the lack of a known compile
+time size of a <code>str</code> forces the runtime code to store the runtime length together
+with the pointer to the actual data, and how references to trait objects need to
+store a pointer to a vtable to work properly. They're both Dynamically Sized Types
+too.</p>
+<p>So a <code>&amp;str</code> is basically <code>type str { pointer: *const u8, len: usize }</code>.
+Maybe it would have been less confusing if <code>&amp;str</code> was presented another way?
+What about <code>&amp;str[u8; ?]</code>. <em>No that's terrible, never write that again.</em></p>
+<p>The way <code>str</code> is presented by the standard documentation leads me to believe
+that the <code>&amp;</code> in <code>&amp;str</code> is the actual pointer, and that the <code>str</code> part is just
+a placeholder for <code>len: usize</code> and an implicit data type <code>u8</code>. But that's
+maybe wrong, probably?</p>
+<p>My personal take is that <code>str</code> <em>could</em> have been a standard library type, or
+a <code>struct</code> instead, and used without it being a reference "<code>&amp;</code>". That way
+the pointer field could have been seen in code, and all would have been well.
+But since Rust is Rust, and <code>&amp;</code> means shared reference, all the standard rules
+around lifetimes and sharing kick in. That results in an overall nicer experience.
+However, I find the lack of a deeper explanation or what-if explorations unsatisfying.</p>
+<h1 id="three-types-of-string-storage-again">Three types of string storage, again</h1>
+<h2 id="heap">Heap</h2>
+<p>The standard library <code>String</code> is always heap allocated, but it can interact with
+<code>&amp;str</code> in two ways</p>
+<ol>
+<li>Anything that takes a <code>&amp;str</code> can take a reference to a <code>String</code> and it will just work</li>
+<li>We can get a <code>&amp;str</code> sub-slice of a <code>String</code> by doing <code>&amp;my_string[1..3]</code> which for
+the <code>String</code> <code>"abcd"</code> would be <code>"bcd"</code>.</li>
+</ol>
+<p>Neither (1) nor (2) above need to allocate any extra memory except for the size
+of the pointer and the length.</p>
+<p>Here we allocate an empty <code>String</code> on the heap, and our handle to it, called <code>x</code>
+is on the stack:</p>
+<pre class="z-code"><code><span class="z-text z-plain">                 PROGRAM                                MEMORY
+</span><span class="z-text z-plain">use std::str;                            ========================================
+</span><span class="z-text z-plain">fn main() {                              |              HEAP                    |
+</span><span class="z-text z-plain">    // An empty String                   | addr[0x00F0] &lt;----+                  |
+</span><span class="z-text z-plain">    let x: String = String::new();       | type: *const u8   |                  |
+</span><span class="z-text z-plain">        |                                | value: [empty]    |                  |
+</span><span class="z-text z-plain">        |                                |                   |                  |
+</span><span class="z-text z-plain">        |                                |///////////////////|//////////////////|
+</span><span class="z-text z-plain">        |                                |                   |                  |
+</span><span class="z-text z-plain">        |                                | addr[0xFFF0]      |                  |
+</span><span class="z-text z-plain">        |                                | type: String      |                  |
+</span><span class="z-text z-plain">        +------------------------------- &gt; value: 0x00F0 + len: 0 + capacity: 0 |
+</span><span class="z-text z-plain">                                         |              STACK                   |
+</span><span class="z-text z-plain">}                                        ========================================
+</span></code></pre>
+<p>There's a bit of lying going on above, since String itself doesn't have the pointer,
+it's a wrapper around <code>Vec&lt;u8&gt;</code>, and the <code>Vec</code> has the actual pointer.</p>
+<h2 id="data-segment">Data segment</h2>
+<p>As previously mentioned, all string literals, e.g. <code>let x = "hello"</code>, will have
+the type <code>&amp;'static str</code>, and they are stored in the <code>data</code> segment of the application
+binary.</p>
+<pre class="z-code"><code><span class="z-text z-plain">              PROGRAM                                     SEGMENTS
+</span><span class="z-text z-plain">                                            ======================================= low mem
+</span><span class="z-text z-plain">fn main() {                                 |              .text                  |
+</span><span class="z-text z-plain">    // A str &quot;string&quot; with the value &quot;abc&quot;  =======================================
+</span><span class="z-text z-plain">    // which is stored in the data segment  |              .data                  |
+</span><span class="z-text z-plain">    let x: &amp;&#39;static str = &quot;abc&quot;; ----+      | addr[0x0008] &lt;----------+           |
+</span><span class="z-text z-plain">        |                            |      | type: *const u8         |           |
+</span><span class="z-text z-plain">        |                            +------&gt; value: &quot;abc&quot;            |           |
+</span><span class="z-text z-plain">        |                                   ==========================|============
+</span><span class="z-text z-plain">        |                                   |               HEAP      |           |
+</span><span class="z-text z-plain">        |                                   |                         |           | addr[0x00F0]
+</span><span class="z-text z-plain">        |                                   |                         |           |
+</span><span class="z-text z-plain">        |                                   |/////////////////////////|///////////|
+</span><span class="z-text z-plain">        |                                   |                         |           |
+</span><span class="z-text z-plain">        |                                   |                         |           |
+</span><span class="z-text z-plain">        |                                   |                         |           |
+</span><span class="z-text z-plain">        |                                   | addr[0xFFF0]            |           |
+</span><span class="z-text z-plain">        | // x is stored on the stack       | type: &amp;&#39;static str      |           | addr[0xFFFF]
+</span><span class="z-text z-plain">        +-----------------------------------&gt; value: 0x0008 + len: 3 -+           |
+</span><span class="z-text z-plain">         // and contains a ptr and a len    |               STACK                 |
+</span><span class="z-text z-plain">}                                           ======================================= high mem
+</span></code></pre>
+<h2 id="stack">Stack</h2>
+<p>It's possible to store string data on the stack, one way would be to create an
+array of <code>u8</code> and then get a <code>&amp;str</code> slice pointing into that array.</p>
+<p>This is stolen from the <a href="https://doc.rust-lang.org/std/str/fn.from_utf8.html">str documentation</a>:</p>
+<pre class="z-code"><code><span class="z-text z-plain">                        PROGRAM                                      MEMORY
+</span><span class="z-text z-plain">use std::str;                                           =================================
+</span><span class="z-text z-plain">fn main() {                                             | HEAP (unused in this example) |
+</span><span class="z-text z-plain">                                                        |///////////////////////////////|
+</span><span class="z-text z-plain">    let sparkle_heart: [u8; 4] = [240, 159, 146, 150];  | addr[0xFFE0] &lt;----------+     |
+</span><span class="z-text z-plain">                                  |                     | type: *const u8         |     |
+</span><span class="z-text z-plain">                                  +---------------------&gt; value: [bytes...]       |     |
+</span><span class="z-text z-plain">                                                        |                         |     |
+</span><span class="z-text z-plain">+-- let sparkle_heart = str::from_utf8(&amp;sparkle_heart)  | addr[0xFFF0]            |     |
+</span><span class="z-text z-plain">|       .unwrap();                                      | type: &amp;str              |     |
+</span><span class="z-text z-plain">|-------------------------------------------------------&gt; value: 0xFFE0 + len: 4 -+     |
+</span><span class="z-text z-plain">                                                        |             STACK             |
+</span><span class="z-text z-plain">}                                                       =================================
+</span></code></pre>
+<h2 id="stack-strings-and-hybrid-strings">Stack strings and Hybrid strings</h2>
+<p>For stack allocated strings, or for hybrid stack/heap implementations, there are
+a number of crates available. Use your favorite search engine to find them.</p>
+<h1 id="a-helpful-tip">A helpful tip</h1>
+<p>The reference variety of <code>String</code>: <code>&amp;String</code>, should be avoided in favor of <code>&amp;str</code>,
+unless there is a need for a "String out parameter". A "String out parameter", or
+<code>&amp;mut String</code>, can be used when a currently owned String needs to be updated by
+a receiving function, without having to move it into, and then out of, that function.</p>
+<p>In short:</p>
+<ul>
+<li>Use <code>String</code> for strings you need to change, or where a <code>String</code> is a required parameter.</li>
+<li>Use <code>&amp;str</code> as function parameters when you need to read string data, since all types of
+strings can be cheaply turned into <code>&amp;str</code>.</li>
+<li>Use <code>&amp;mut String</code> only when you need a "String out parameter".</li>
+</ul>
+<h1 id="final-words">Final words</h1>
+<p>We learned that</p>
+<ul>
+<li><code>String</code> is for growable strings on the heap.</li>
+<li><code>[u8; N]</code> (byte array) is for strings on the stack.</li>
+<li>string literals <code>"abc"</code> are strings in the <code>data</code> segment.</li>
+<li><code>&amp;str</code> is for peeking into string slices allocated on the
+heap, in the <code>data</code> segment, or on the stack.</li>
+<li>How <code>&amp;str</code> points into the different types of string storage.</li>
+</ul>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/authentication-authorization/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Authentication &amp; authorization - what gives? —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Authentication &amp; authorization - what gives? —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Authentication &amp; authorization - what gives? —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="In which I discuss the basics of authentication, authorization, and OpenID Connect.
+Why?" />
+        <meta name="twitter:description" content="In which I discuss the basics of authentication, authorization, and OpenID Connect.
+Why?">
+        <meta property="og:description" content="In which I discuss the basics of authentication, authorization, and OpenID Connect.
+Why?" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Authentication &amp; authorization - what gives?
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date"> 4 July 2016 · reading time 8 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/security/">security</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/authentication/">authentication</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/authorization/">authorization</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/authentication-authorization/#what-we-have">What we have</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/authentication-authorization/#authentication">Authentication</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/authentication-authorization/#authorization">Authorization</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/authentication-authorization/#mixin-it-up">Mixin&#x27; it up</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/authentication-authorization/#tokens">Tokens</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/authentication-authorization/#other-sources">Other Sources</a>
+        </li>
+        
+    </ol>
+    
+
+<p>In which I discuss the basics of authentication, authorization, and OpenID Connect.
+Why?</p>
+<span id="continue-reading"></span>
+<p>Disclaimer: The below blog post was written by me for me, and might (and probably does!)
+contain errors. Don't rely on anything below as <em>fact</em>, from now you're on your own.</p>
+<h1 id="what-we-have">What we have</h1>
+<p>This is typically what you see when you visit pages attempting to explain
+authentication &amp; authorization:</p>
+<a class="image" href=".&#x2F;webflow.png">
+    <img src=".&#x2F;webflow.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The above image specifically covers the Google OAuth 2.0 flow, using Google as an
+OpenID Connect Provider. This truly is the future, right? Right? Right.</p>
+<p>Another way of describing the flow is from the OAuth 2.0 spec:</p>
+<pre>
++--------+                               +---------------+
+|        |--(A)- Authorization Request ->|   Resource    |
+|        |<-(B)-- Authorization Grant ---|     Owner     |
+|        |                               +---------------+
+|        |                               +---------------+
+|        |--(C)-- Authorization Grant -->| Authorization |
+| Client |<-(D)----- Access Token -------|     Server    |
+|        |                               +---------------+
+|        |                               +---------------+
+|        |--(E)----- Access Token ------>|    Resource   |
+|        |<-(F)--- Protected Resource ---|     Server    |
++--------+                               +---------------+
+</pre>
+<p>The images leave a lot to the imagination, but on a high level they show
+authentication and authorization information being exchanged.</p>
+<p>We need to know more about all the moving parts!</p>
+<h1 id="authentication">Authentication</h1>
+<h2 id="openid-connect">OpenID Connect</h2>
+<p>One way of authenticating is using <a href="https://en.wikipedia.org/wiki/OpenID_Connect">OpenID Connect</a>,
+it's the third generation of OpenID - the first two being OpenID Authentication 1.X,
+and OpenID Authentication 2.0.</p>
+<p>The two old versions are specific schemes for authenticating users, but were
+"unnecessarily complicated". Since everyone is using OAuth 2, OpenID Connect was
+implemented to run on top of it - or as the introduction to the spec states:</p>
+<blockquote>
+<p>... a simple identity layer on top of the OAuth 2.0 protocol</p>
+</blockquote>
+<p>A full list of OpenID specifications can be found on their
+<a href="http://openid.net/developers/specs/">Specifications &amp; Developer Information</a>
+site. The <a href="http://openid.net/specs/openid-connect-core-1_0.html">OpenID Connect Core 1.0</a>
+specification for example.</p>
+<p>OpenID Connect is used by a lot of organizations, which lend their authentication
+service powers (called OpenID Provider - OP) to our servers (called Relying Party - RP).</p>
+<p>Honest question: Why couldn't they just have called it OpenID 3.0 for OAuth 2.0 or something?
+When running across "OpenID 2.0" and then something called "OpenID Connect",
+naturally you're going to think that the "2.0" is newer
+<a href="https://www.youtube.com/watch?v=gAjR4_CbPpQ">harder better faster stronger</a>.</p>
+<h2 id="other-ways">Other ways</h2>
+<p>OpenID Connect is not the only game in town,
+<a href="https://en.wikipedia.org/wiki/Facebook_Platform#Facebook_Connect">Facebook Connect</a>
+is another major player.</p>
+<p>You can also try to roll your own authentication service, and if you do that you're
+not necessarily constrained to the requirements of OpenID Connect. It's not a bad
+idea to be heavily inspired by the work of <em>geniuses</em>, though.</p>
+<h1 id="authorization">Authorization</h1>
+<p>Let's talk about OAuth 2.0 baby.
+<a href="https://www.youtube.com/watch?v=ydrtF45-y-g">Let's talk about you and me. Let's talk about all the good things, and the bad things.</a></p>
+<p>Instead of using the terms <em>OpenID Provider</em> and <em>Relying Party</em>, the OAuth 2.0
+spec uses</p>
+<table>
+    <tbody>
+        <tr>
+            <td style="font-style: italic">
+                Resource owner
+            </td>
+            <td>
+                Capable of granting access, sometimes an end-user
+            </td>
+        </tr>
+        <tr>
+            <td style="font-style: italic">
+                Resource server
+            </td>
+            <td>
+                Has resources accessible after presenting an access token
+            </td>
+        </tr>
+            <tr>
+            <td style="font-style: italic">
+                Client
+            </td>
+            <td>
+                An application (server) making requests on behalf of the resource owner
+            </td>
+        </tr>
+        <tr>
+            <td style="font-style: italic">
+                Authorization server
+            </td>
+            <td>
+                Issues tokens after authentication and authorization
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p>It goes on stating <a href="http://tools.ietf.org/html/rfc6749#section-1.1">"The interaction between the authorization server and resource server
+is beyond the scope of this specification.  The authorization server
+may be the same server as the resource server or a separate entity.""</a></p>
+<h2 id="authorization-grant">Authorization grant</h2>
+<p>An <em>authorization grant</em> is the <a href="http://tools.ietf.org/html/rfc6749#section-1.3">"... resource
+owner's authorization (to access its protected resources) used by the
+client to obtain an access token"</a></p>
+<p>There are four <em>grants types</em> defined in the spec</p>
+<ul>
+<li>Authorization Code</li>
+<li>Implicit</li>
+<li>Resource Owner Password Credentials</li>
+<li>Client Credentials.</li>
+</ul>
+<p>Each grant has an
+associated <em>Flow</em>, which are ways of obtaining tokens used for authorization after
+authenticating a user, the most common being authorization code flow, and
+implicit flow.</p>
+<h3 id="authorization-code-flow"><a href="http://tools.ietf.org/html/rfc6749#section-1.3.1">Authorization code flow</a></h3>
+<p>Typically involves a browser (user agent), a web server (client),
+a resource owner (user), and an authorization server.</p>
+<p>Explained in detail in <a href="http://tools.ietf.org/html/rfc6749#section-4.1">section 4.1</a>
+of the spec, summarized below:</p>
+<ol>
+<li>The client (server) redirects the UA to the authorization server.</li>
+<li>The authorization server authenticates the user and asks the user to <em>grant</em> access.</li>
+<li>If access is granted the authorization server redirects the user back to the client (server).</li>
+<li>The client (server) requests an access token using the authorization code received in step 3,
+the redirection URI is also sent to the authorization server for validation.</li>
+<li>The client is authenticated on the authorization server using the authorization code and
+redirect URI. If valid, the authorization gives the client an access token (and optionally
+a refresh token).</li>
+</ol>
+<p><em>Summarized</em> means that a lot of detail was left out. Read the spec!</p>
+<p>In this flow, the access token never leaves the <em>client</em> (server), instead the
+client is connected to the UA/user via e.g. sessions.</p>
+<p>I guess the access token can be exposed to the UA anyway, if the implementation
+chooses to do that. The takeaway is
+that the client uses credentials (typically client secret) issued by the authorization server,
+that should NOT be used in the implicit flow. Otherwise it wouldn't be a
+<em>secret</em>.</p>
+<h3 id="implicit-flow"><a href="http://tools.ietf.org/html/rfc6749#section-1.3.2">Implicit flow</a></h3>
+<p>Used when there is no, or you don't specifically have a need for, the client being involved.
+The authorization server sends an access token directly to the UA in the redirect.
+Typically used by Javascript clients or Android apps.</p>
+<h1 id="mixin-it-up">Mixin' it up</h1>
+<p>OpenID Connect runs on top of OAuth 2.0 - always keep that in mind when reading
+about these two separate specifications!</p>
+<p>The concepts of the different specs
+and auxiliary technologies like JWT are often presented as one and the same
+by third parties (blogs, etc) and one needs to keep that in mind.</p>
+<p>OpenID Connect gives you the convenient ID Token, which can be used in parallel
+with the OAuth 2.0 Access Token, or separately!</p>
+<h1 id="tokens">Tokens</h1>
+<p>All of these are (usually) <a href="https://jwt.io/">JWTs</a>. Basically they contain claims, and (AFAIK)
+those claims should only ever be trusted if they are digitally signed by the
+issuer using e.g. <a href="https://tools.ietf.org/html/rfc7515">JWS</a>, and that signature should
+always be verified by anyone about to trust those claims (e.g. a resource server).</p>
+<p>Here's one place to <a href="http://kjur.github.io/jsjws/tool_jwt.html">play around</a> with JWTs
+and different types of signatures.</p>
+<h2 id="jwt-signatures">JWT signatures</h2>
+<p>According to
+<a href="https://auth0.com/blog/2015/12/17/json-web-token-signing-algorithms-overview/">auth0</a>
+the most common types of signatures are</p>
+<ul>
+<li>HMAC + SHA256
+Creates a signature using a <em>key</em> and a <em>message</em>. The <em>key</em> is the same every time
+and the <em>message</em> is the JWT. Common, but more insecure than the asymmetric algorithms below.</li>
+<li>RSASSA-PKCS1-v1_5 + SHA256
+Asymmetric signing using RSA. Usually faster than ECDSA.</li>
+<li>ECDSA + P-256 + SHA256
+Asymmetric signing using ECDSA. Smaller keys than RSA, resulting in smaller JWTs.</li>
+</ul>
+<h2 id="id-token">ID Token</h2>
+<p>The OpenID Connect Core 1.0 specification defines the <a href="http://openid.net/specs/openid-connect-core-1_0.html#IDToken">ID Token</a> in section 2.</p>
+<p>There are a <em>bunch</em> of fields, and following the spec for validating the ID Token is
+a really good idea. Read the spec. Live the spec.</p>
+<p>The ID Token contains claims and typically identifies a user in the context of the OP.</p>
+<p>If you are building a service with e.g. Google Sign-In, the ID Token is issued by
+Google and <a href="https://developers.google.com/identity/sign-in/android/backend-auth">according to them</a>
+the RP should use the ID Token to uniquely identify a user in the RPs context
+(after verifying the integrity of the token).</p>
+<p>If you are building your own service and don't have any use for e.g. Google APIs
+but you still want to use Google accounts for signing in to your service, just
+use the ID Token and forget about the Access Token.</p>
+<h2 id="access-token">Access token</h2>
+<p><a href="http://tools.ietf.org/html/rfc6749#section-1.4">"Access tokens are credentials used to access protected resources.  An
+access token is a string representing an authorization issued to the
+client."</a></p>
+<p>Typically, the access token is a JWT token, but according to the spec it doesn't have to be.</p>
+<p>The most important thing is, when you need access to an API (resource), use the token that
+the authorization server gave you!</p>
+<h3 id="access-token-types">Access Token Types</h3>
+<p>There are a <a href="https://tools.ietf.org/html/rfc6749#section-7.1">number</a> of access token
+types.</p>
+<h4 id="bearer-token">Bearer token</h4>
+<p>Whoever presents the token shall be granted access to a resource as long as
+the token is valid. This is the most common type of access token.</p>
+<h4 id="mac-token">MAC token</h4>
+<p>The <a href="http://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-05">draft</a> still isn't
+finalized, but from what I can gather, the token contains some cryptographic content
+that would make it harder to forge and/or read. A probable use case would be
+using it in use-cases lacking HTTPS/TLS capabilities.</p>
+<p>Don't quote me on that.</p>
+<h2 id="refresh-token">Refresh token</h2>
+<p>A token used to request new access tokens as they expire. Handy if one wants
+to avoid going through the authorization flow once again.</p>
+<h1 id="other-sources">Other Sources</h1>
+<ul>
+<li><a href="http://connect2id.com/learn/openid-connect">OpenID Connect explained</a></li>
+</ul>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

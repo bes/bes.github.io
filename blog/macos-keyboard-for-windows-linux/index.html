@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/macos-keyboard-for-windows-linux/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>macOS keyboard settings for Windows &amp; Linux users —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="macOS keyboard settings for Windows &amp; Linux users —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="macOS keyboard settings for Windows &amp; Linux users —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="If you're like me, and you're coming from two decades of using Windows and Linux,
+you might want to keep using the keyboard shortcuts you're used to.
+You might also be a programmer. In that case: even better." />
+        <meta name="twitter:description" content="If you're like me, and you're coming from two decades of using Windows and Linux,
+you might want to keep using the keyboard shortcuts you're used to.
+You might also be a programmer. In that case: even better.">
+        <meta property="og:description" content="If you're like me, and you're coming from two decades of using Windows and Linux,
+you might want to keep using the keyboard shortcuts you're used to.
+You might also be a programmer. In that case: even better." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        macOS keyboard settings for Windows &amp; Linux users
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">18 October 2015 · reading time 3 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/operating-system/">operating system</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/os/">os</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/mac/">mac</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/apple/">apple</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/developer/">developer</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/macos-keyboard-for-windows-linux/#goals">Goals</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/macos-keyboard-for-windows-linux/#swedish-windows-linux-style-keyboard">Swedish Windows&#x2F;Linux-style keyboard</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/macos-keyboard-for-windows-linux/#use-ctrl-c-to-copy-instead-of-command-c-etc">Use Ctrl+C to copy instead of Command+C, etc.</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/macos-keyboard-for-windows-linux/#use-ctrl-c-to-abort-execution-in-a-terminal">Use Ctrl+C to abort execution in a terminal.</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/macos-keyboard-for-windows-linux/#improve-the-alt-tab-experience">Improve the Alt+Tab experience</a>
+        </li>
+        
+    </ol>
+    
+
+<p>If you're like me, and you're coming from two decades of using Windows and Linux,
+you might want to keep using the keyboard shortcuts you're used to.</p>
+<p>You might also be a programmer. In that case: even better.</p>
+<span id="continue-reading"></span>
+<ul>
+<li>2015-10-18: This guide was written for OSX 10.11 (El Capitan).</li>
+<li>2017-04-14: Updated for macOS 10.12 (Sierra)</li>
+<li>2020-10-27: Removed broken links and updated examples for macOS Catalina.</li>
+</ul>
+<h1 id="goals">Goals</h1>
+<ol>
+<li>Use a Swedish keyboard, with close-to-identical keybindings.</li>
+<li>Use Ctrl+S (Save), Ctrl+C (Copy), Ctrl+V (Paste), etc.
+(Clarification: Actually Cmd+Key but Cmd is in the same position as Ctrl).</li>
+<li>Use the same old finger setting you're used to, that includes AltGr
+(or whatever key, but placed where AltGr used to be) for writing the usual.
+characters <code>{}[]\|</code> etc. (I know this is very specific to the Swedish programming layout).</li>
+<li>Use Ctrl+C to abort execution in a terminal (I'll be using iTerm).</li>
+<li>Improve the Alt+Tab experience.</li>
+</ol>
+<h1 id="swedish-windows-linux-style-keyboard">Swedish Windows/Linux-style keyboard</h1>
+<p>I built a keyboard layout using <a href="http://scripts.sil.org/ukelele">Ukelele</a>.
+It's available as a <a href="https://gist.github.com/bes/0b634c1f1cbb2e40d1ba91a94990f2fb">GitHub gist</a>.
+Just follow the instructions in the README!</p>
+<h1 id="use-ctrl-c-to-copy-instead-of-command-c-etc">Use Ctrl+C to copy instead of Command+C, etc.</h1>
+<p>Our goal isn't explicitly to use Ctrl+C, Ctrl+S, etc. It's rather to let you use
+the same old hand/finger positions you are used to. Maybe even your trusty old windows/linux keyboard.
+That means, Command is going to be moved to Ctrl, Ctrl to Option, and Option to Command.
+That way, we're 90% there.</p>
+<p>Now we're going to remap the keyboard modifier keys using System Preferences.</p>
+<p><code>System Preferences</code> &gt; <code>Keyboard</code> &gt; Press <code>Modifier Keys</code> Button &gt; Remap to:</p>
+<p><strong>For an Apple keyboard</strong></p>
+<table>
+    <tbody>
+        <tr>
+            <td style="font-style: italic">
+                Control Key
+            </td>
+            <td>
+                &#8963;
+            </td>
+            <td>
+                =>
+            </td>
+            <td>
+                &#8984; Command
+            </td>
+        </tr>
+        <tr>
+            <td style="font-style: italic">
+                Option Key
+            </td>
+            <td>
+                &#8997;
+            </td>
+            <td>
+                =>
+            </td>
+            <td>
+                &#8963; Control
+            </td>
+        </tr>
+        <tr>
+            <td style="font-style: italic">
+                Command Key
+            </td>
+            <td>
+                &#8984;
+            </td>
+            <td>
+                =>
+            </td>
+            <td>
+                &#8997; Option
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p><strong>For a Windows/Linux keyboard</strong></p>
+<table>
+    <tbody>
+        <tr>
+            <td style="font-style: italic">
+                &#8963;
+            </td>
+            <td>
+                Control Key
+            </td>
+            <td>
+                =>
+            </td>
+            <td>
+                &#8984;
+            </td>
+            <td>
+                Command
+            </td>
+        </tr>
+        <tr>
+            <td style="font-style: italic">
+                &#8997;
+            </td>
+            <td>
+                Option Key
+            </td>
+            <td>
+                =>
+            </td>
+            <td>
+                &#8997;
+            </td>
+            <td>
+                Option
+            </td>
+        </tr>
+        <tr>
+            <td style="font-style: italic">
+                &#8984;
+            </td>
+            <td>
+                Command Key
+            </td>
+            <td>
+                =>
+            </td>
+            <td>
+                &#8963;
+            </td>
+            <td>
+                Control
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p>Since macOS uses Command as the base modifier, we are one step closer to emulating
+the behavior in Windows/Linux.</p>
+<p>Goals two and three achieved!</p>
+<h1 id="use-ctrl-c-to-abort-execution-in-a-terminal">Use Ctrl+C to abort execution in a terminal.</h1>
+<p>I use iTerm2 for macOS, and you're going to have to change around some stuff
+for the key bindings.</p>
+<p>Go to <code>Preferences</code> &gt; <code>Keys</code> &gt; Remap to:</p>
+<ul>
+<li>Control key = Left Command</li>
+<li>Left Option key = Left Option</li>
+<li>Right Option key = Right Option</li>
+<li>Left Command key = Control</li>
+<li>Right Command key = Control</li>
+</ul>
+<h1 id="improve-the-alt-tab-experience">Improve the Alt+Tab experience</h1>
+<p>There are two things going on. Since we've moved Command to Control, we can't press
+"Alt+Tab" anymore (Command+Tab duh), it's Control+Tab now. We don't want that.
+Also, Command+Tab for app switching in macOS is not a good experience for multi-window apps.</p>
+<p>You'll need to install <a href="https://bahoom.com/hyperswitch">Hyperswitch</a>.
+Once installed, set Option+Tab as the Window switcher key. Alt+Tab is back!
+It remembers your app history as long as you don't click on any Dock icons.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

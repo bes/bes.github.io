@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/undefined-is-nothing/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>The nothing&#x2F;something dichotomy: nullish types in slotted lists —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="The nothing&#x2F;something dichotomy: nullish types in slotted lists —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="The nothing&#x2F;something dichotomy: nullish types in slotted lists —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="In programming languages with nullish types: null, nil, undefined, and so
+on, programmers will usually reach for one of the nullish tokens when
+representing something that can be optional or clearable. Something interesting
+happens when you combine that form of optionality with another form of
+optionality: fixed-length lists that represent slots to be filled in." />
+        <meta name="twitter:description" content="In programming languages with nullish types: null, nil, undefined, and so
+on, programmers will usually reach for one of the nullish tokens when
+representing something that can be optional or clearable. Something interesting
+happens when you combine that form of optionality with another form of
+optionality: fixed-length lists that represent slots to be filled in.">
+        <meta property="og:description" content="In programming languages with nullish types: null, nil, undefined, and so
+on, programmers will usually reach for one of the nullish tokens when
+representing something that can be optional or clearable. Something interesting
+happens when you combine that form of optionality with another form of
+optionality: fixed-length lists that represent slots to be filled in." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        The nothing&#x2F;something dichotomy: nullish types in slotted lists
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date"> 9 May 2024 · reading time 3 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                    <li><a href="https://zkc.se/categories/at-work/">at work</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/javascript/">javascript</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/typescript/">typescript</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/types/">types</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/undefined-is-nothing/#using-nothing-in-place-of-something">Using nothing in place of something</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/undefined-is-nothing/#slotted-list">Slotted list</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/undefined-is-nothing/#borrowing-option">Borrowing Option</a>
+        </li>
+        
+    </ol>
+    
+
+<p>In programming languages with nullish types: <code>null</code>, <code>nil</code>, <code>undefined</code>, and so
+on, programmers will usually reach for one of the nullish tokens when
+representing something that can be optional or clearable. Something interesting
+happens when you combine that form of optionality with another form of
+optionality: fixed-length lists that represent slots to be filled in.</p>
+<span id="continue-reading"></span><div class="note">
+    <div class="note-title">At work!</div>
+    <p>The ideas in this post started at work — a discussion, a bug, an insight
+— and made it all the way here.</p>
+
+</div>
+<h1 id="using-nothing-in-place-of-something">Using nothing in place of something</h1>
+<p>Given an array of <code>User</code> items, it is possible to represent a variable number of
+users, to do amazing things such as loop over them, render them, print them, etc.</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-storage z-type z-interface z-ts">interface</span> <span class="z-entity z-name z-type z-interface z-ts">User</span> <span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-meta z-field z-declaration z-ts">    <span class="z-meta z-definition z-property z-ts"><span class="z-variable z-object z-property z-ts">name</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">string</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span><span class="z-source z-ts">
+</span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-storage z-type z-ts">const</span> <span class="z-meta z-var-single-variable z-expr z-ts"><span class="z-meta z-definition z-variable z-ts"><span class="z-variable z-other z-constant z-ts">users</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-entity z-name z-type z-ts">User</span><span class="z-meta z-type z-tuple z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span> </span></span><span class="z-keyword z-operator z-assignment z-ts">=</span><span class="z-meta z-array z-literal z-ts"> <span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span> <span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>A<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span></span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span> <span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>B<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span></span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span> <span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span> <span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>C<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span> </span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-meta z-brace z-square z-ts">]</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></code></pre>
+<p>An additional requirement may be that it should be possible to display empty,
+to-be-filled-in users. A naïve way might be to represent the nothing/something
+dichotomy as a union type where one member is <code>User</code> and the other is nullish;
+<code>undefined</code> for example.</p>
+<p>This is what I describe as using <em>nothing</em> in place of <em>something</em>. Let's
+declare an instance in the list of users as the union of <code>User</code> and <code>undefined</code>:</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-storage z-type z-ts">const</span> <span class="z-meta z-var-single-variable z-expr z-ts"><span class="z-meta z-definition z-variable z-ts"><span class="z-variable z-other z-constant z-ts">users</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-meta z-type z-paren z-cover z-ts"><span class="z-meta z-brace z-round z-ts">(</span><span class="z-entity z-name z-type z-ts">User</span> <span class="z-keyword z-operator z-type z-ts">|</span> <span class="z-support z-type z-builtin z-ts">undefined</span><span class="z-meta z-brace z-round z-ts">)</span></span><span class="z-meta z-type z-tuple z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span> </span></span><span class="z-keyword z-operator z-assignment z-ts">=</span><span class="z-meta z-array z-literal z-ts"> <span class="z-meta z-brace z-square z-ts">[</span><span class="z-comment z-block z-ts"><span class="z-punctuation z-definition z-comment z-ts">/*</span> ... <span class="z-punctuation z-definition z-comment z-ts">*/</span></span><span class="z-meta z-brace z-square z-ts">]</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></code></pre>
+<p>This is probably fine in many cases.</p>
+<h1 id="slotted-list">Slotted list</h1>
+<p>Let's consider a slotted list. Imagine an array that has a fixed length: the
+starting lineup for a football team or the number of slots in a toaster. Let
+your imagination run free. You can have empty slots, and the slots are not
+filled in any particular order.</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-storage z-type z-ts">const</span> <span class="z-meta z-var-single-variable z-expr z-ts"><span class="z-meta z-definition z-variable z-ts"><span class="z-variable z-other z-constant z-ts">slots</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-meta z-type z-paren z-cover z-ts"><span class="z-meta z-brace z-round z-ts">(</span><span class="z-entity z-name z-type z-ts">User</span> <span class="z-keyword z-operator z-type z-ts">|</span> <span class="z-support z-type z-builtin z-ts">undefined</span><span class="z-meta z-brace z-round z-ts">)</span></span><span class="z-meta z-type z-tuple z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span> </span></span><span class="z-keyword z-operator z-assignment z-ts">=</span><span class="z-meta z-array z-literal z-ts"> <span class="z-meta z-brace z-square z-ts">[</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span> <span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>A<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span></span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span> <span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>B<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span></span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts"><span class="z-punctuation z-whitespace z-comment z-leading z-ts">    </span><span class="z-comment z-line z-double-slash z-ts"><span class="z-punctuation z-definition z-comment z-ts">//</span></span><span class="z-comment z-line z-double-slash z-ts"> And so on</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">]</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></code></pre>
+<p>A problem with this approach is that <code>(User | undefined)</code> can become contagious; a
+programmer might ask "Why is it necessary to handle <code>undefined</code> everywhere?",
+and "Should the array be passed as-is or could it be filtered to pass only
+non-nullish values?".</p>
+<p>You will need to pass references to <code>(User | undefined)[]</code> around. At some point
+the distance between the code that centers around <code>(User | undefined)[]</code>, which
+motivates its existence, and other code — rendering, parsing, API calls
+— will be large enough that the original meaning gets lost. It is not
+clear from its type signature why it needs to be able to be <code>undefined</code>.</p>
+<p>When an array like this is received and passed on, am I allowed to filter it?
+The originator knows that it's a slotted list, so it can't be filtered —
+lest we lose information — but not all clients know that.</p>
+<p>What we needed is an approach that expresses something that is stronger than
+just nullishability.</p>
+<h1 id="borrowing-option">Borrowing Option</h1>
+<p>I would use a type like this instead, modelled after Rust's <code>Option</code> type:</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-enum z-declaration z-ts"><span class="z-keyword z-control z-export z-ts">export</span> <span class="z-storage z-modifier z-ts">const</span> <span class="z-storage z-type z-enum z-ts">enum</span> <span class="z-entity z-name z-type z-enum z-ts">OptionKind</span> <span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-enum z-declaration z-ts">    <span class="z-variable z-other z-enummember z-ts">Some</span> <span class="z-keyword z-operator z-assignment z-ts">=</span> <span class="z-constant z-numeric z-decimal z-ts">1</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-enum z-declaration z-ts">    <span class="z-variable z-other z-enummember z-ts">None</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-enum z-declaration z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span><span class="z-source z-ts">
+</span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-keyword z-control z-export z-ts">export</span> <span class="z-storage z-type z-interface z-ts">interface</span> <span class="z-entity z-name z-type z-interface z-ts">Some</span><span class="z-meta z-type z-parameters z-ts"><span class="z-punctuation z-definition z-typeparameters z-begin z-ts">&lt;</span><span class="z-entity z-name z-type z-ts">T</span><span class="z-punctuation z-definition z-typeparameters z-end z-ts">&gt;</span></span> <span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-meta z-field z-declaration z-ts">    <span class="z-meta z-definition z-property z-ts"><span class="z-variable z-object z-property z-ts">kind</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-entity z-name z-type z-module z-ts">OptionKind</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-entity z-name z-type z-ts">Some</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-meta z-field z-declaration z-ts">    <span class="z-meta z-definition z-property z-ts"><span class="z-variable z-object z-property z-ts">value</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-entity z-name z-type z-ts">T</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span><span class="z-source z-ts">
+</span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-keyword z-control z-export z-ts">export</span> <span class="z-storage z-type z-interface z-ts">interface</span> <span class="z-entity z-name z-type z-interface z-ts">None</span> <span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-meta z-field z-declaration z-ts">    <span class="z-meta z-definition z-property z-ts"><span class="z-variable z-object z-property z-ts">kind</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-entity z-name z-type z-module z-ts">OptionKind</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-entity z-name z-type z-ts">None</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-meta z-field z-declaration z-ts">    <span class="z-meta z-definition z-property z-ts"><span class="z-variable z-object z-property z-ts">value</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-builtin z-ts">undefined</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-interface z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span><span class="z-source z-ts">
+</span><span class="z-source z-ts"><span class="z-meta z-type z-declaration z-ts"><span class="z-keyword z-control z-export z-ts">export</span> <span class="z-storage z-type z-type z-ts">type</span> <span class="z-entity z-name z-type z-alias z-ts">Option</span><span class="z-meta z-type z-parameters z-ts"><span class="z-punctuation z-definition z-typeparameters z-begin z-ts">&lt;</span><span class="z-entity z-name z-type z-ts">T</span><span class="z-punctuation z-definition z-typeparameters z-end z-ts">&gt;</span></span> <span class="z-keyword z-operator z-assignment z-ts">=</span> <span class="z-entity z-name z-type z-ts">Some</span><span class="z-meta z-type z-parameters z-ts"><span class="z-punctuation z-definition z-typeparameters z-begin z-ts">&lt;</span></span><span class="z-meta z-type z-parameters z-ts"><span class="z-entity z-name z-type z-ts">T</span></span><span class="z-meta z-type z-parameters z-ts"><span class="z-punctuation z-definition z-typeparameters z-end z-ts">&gt;</span></span> <span class="z-keyword z-operator z-type z-ts">|</span> <span class="z-entity z-name z-type z-ts">None</span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></code></pre>
+<p>A few trivial helper functions like <code>some&lt;T&gt;(t: T)</code> and <code>none()</code> are missing,
+and are left as an exercise for the reader.</p>
+<p>The virtues of Rust's <code>Option</code> type are well documented, and <code>Option</code> above is
+very similar, but just to spell everything out</p>
+<ul>
+<li><code>None</code> can be matched on</li>
+<li><code>None</code> can be used in arrays instead of <code>undefined</code></li>
+<li>It is clear that <code>None</code> is a placeholder value</li>
+</ul>
+<p>Now we can have this, which is better than before</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-storage z-type z-ts">const</span> <span class="z-meta z-var-single-variable z-expr z-ts"><span class="z-meta z-definition z-variable z-ts"><span class="z-variable z-other z-constant z-ts">users</span></span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-entity z-name z-type z-ts">Option</span><span class="z-meta z-type z-parameters z-ts"><span class="z-punctuation z-definition z-typeparameters z-begin z-ts">&lt;</span></span><span class="z-meta z-type z-parameters z-ts"><span class="z-entity z-name z-type z-ts">User</span></span><span class="z-meta z-type z-parameters z-ts"><span class="z-punctuation z-definition z-typeparameters z-end z-ts">&gt;</span></span><span class="z-meta z-type z-tuple z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span> </span></span><span class="z-keyword z-operator z-assignment z-ts">=</span><span class="z-meta z-array z-literal z-ts"> <span class="z-meta z-brace z-square z-ts">[</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">none</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">none</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">some</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span> <span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>A<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span></span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">none</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts">    <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">some</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-objectliteral z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span> <span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts">name</span></span><span class="z-meta z-object z-member z-ts"><span class="z-meta z-object-literal z-key z-ts"><span class="z-punctuation z-separator z-key-value z-ts">:</span></span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>B<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span></span><span class="z-punctuation z-definition z-block z-ts">}</span></span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts"><span class="z-punctuation z-whitespace z-comment z-leading z-ts">    </span><span class="z-comment z-line z-double-slash z-ts"><span class="z-punctuation z-definition z-comment z-ts">//</span></span><span class="z-comment z-line z-double-slash z-ts"> And so on</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">]</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></code></pre>
+<p>We can now decide that the <code>undefined</code> type variant in <code>T | undefined</code> means
+"nothing", in other words that it hasn't been assigned a value yet. The <code>None</code>
+variant of <code>Option</code> similarly means "something", or "placeholder".</p>
+<p>The "nothing values" can keep meaning nothing. I'm not fond of JavaScript and
+TypeScript having both <code>undefined</code> and <code>null</code>, but it is what it is. It might
+have made sense when JavaScript was (apocryphally) created in 10 days, but I
+don't have to like it.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Mapping iOS devices to their iOS version —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Mapping iOS devices to their iOS version —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Mapping iOS devices to their iOS version —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this." />
+        <meta name="twitter:description" content="I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this.">
+        <meta property="og:description" content="I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Mapping iOS devices to their iOS version
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">14 April 2024 · reading time 3 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/ios/">ios</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/ipados/">ipados</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/swift/">swift</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#encouraging-users-to-update-their-phone-or-tablet">Encouraging users to update their phone (or tablet)</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#introducing-ios-hw-to-os">Introducing ios-hw-to-os</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#some-wikipedia-some-yaml-some-json-some-rust-and-some-swift">Some Wikipedia, some YAML, some JSON, some Rust, and some Swift</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#contributions-welcome">Contributions welcome</a>
+        </li>
+        
+    </ol>
+    
+
+<p>I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this.</p>
+<span id="continue-reading"></span><h1 id="encouraging-users-to-update-their-phone-or-tablet">Encouraging users to update their phone (or tablet)</h1>
+<p>At <a href="https://www.spiideo.com/">work</a>, we are working on an iOS/iPadOS —
+or simply iOS, even if that is somewhat incorrect —
+app that has a lot of functionality, and some of our functionality is simply better
+(the underlying platform is more bug free) or we are accessing certain platform
+APIs that are only available on later versions. So we want to push users to
+upgrade to the latest iOS version.</p>
+<p>For that we have a modal dialog that pops up whenever the user opens the app,
+but at most once every twenty-four hours.</p>
+<p>Problem is, it's popping up even though some of the users are on the latest
+available version of iOS. We have a minimum iOS version of 15, but there are
+relatively recent devices that are stuck on iOS 16. <code>iPhone10,6</code> (iPhone X) and
+<code>iPad6,8</code> (iPad Pro 12.9-in. – 1st generation) are two models that are unreasonably
+stuck on iOS/iPadOS 16.</p>
+<p>So we are asking users to upgrade to a later version of iOS than what's possible,
+and I'm sure that's at least a little annoying for them.</p>
+<h1 id="introducing-ios-hw-to-os">Introducing <code>ios-hw-to-os</code></h1>
+<p>Now there exists both a (currently incomplete) JSON file in my
+<a href="https://github.com/bes/ios-hw-to-os">ios-hw-to-os</a> repository,
+and a simple Swift package called <a href="https://github.com/bes/ios-hw-to-os-spm">ios-hw-to-os-spm</a>
+that makes it easy to use from your Swift or Swift-XCode application.</p>
+<p>Here's an example of how to use the API</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-meta z-import z-swift"><span class="z-keyword z-other z-import z-swift">import</span> <span class="z-support z-type z-module z-import z-swift">IosHwToOs</span></span>
+</span><span class="z-source z-swift">
+</span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">useAllMappings</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">    <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> mappings <span class="z-keyword z-operator z-assignment z-swift">=</span> IosHwToOsMappings<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>all() <span class="z-keyword z-control z-if z-swift">else</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">    <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">    <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> device <span class="z-keyword z-operator z-assignment z-swift">=</span> mappings<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>devices<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>first(<span class="z-keyword z-control z-switch z-swift">where</span>: { $<span class="z-constant z-numeric z-integer z-decimal z-swift">0</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>hardware <span class="z-keyword z-operator z-comparative z-swift">==</span> <span class="z-meta z-literal z-string z-swift"><span class="z-string z-quoted z-double z-swift">&quot;</span><span class="z-string z-quoted z-double z-swift">i</span><span class="z-string z-quoted z-double z-swift">P</span><span class="z-string z-quoted z-double z-swift">h</span><span class="z-string z-quoted z-double z-swift">o</span><span class="z-string z-quoted z-double z-swift">n</span><span class="z-string z-quoted z-double z-swift">e</span><span class="z-string z-quoted z-double z-swift">1</span><span class="z-string z-quoted z-double z-swift">0</span><span class="z-string z-quoted z-double z-swift">,</span><span class="z-string z-quoted z-double z-swift">1</span><span class="z-string z-quoted z-double z-swift">&quot;</span></span>}) <span class="z-keyword z-control z-if z-swift">else</span> {
+</span><span class="z-source z-swift">        <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">    <span class="z-comment z-line z-double-slash z-swift"><span class="z-punctuation z-definition z-comment z-line z-double-slash z-swift">//</span> Prints IosHwToOsDevice(hardware: &quot;iPhone10,1&quot;, version: &quot;16.7.7&quot;)</span>
+</span><span class="z-source z-swift">    print(<span class="z-meta z-literal z-string z-swift"><span class="z-string z-quoted z-double z-swift">&quot;</span><span class="z-support z-punctuation z-expression z-begin z-swift">\(</span><span class="z-meta z-expression z-swift">device</span><span class="z-support z-punctuation z-expression z-end z-swift">)</span><span class="z-string z-quoted z-double z-swift">&quot;</span></span>)
+</span><span class="z-source z-swift">}
+</span><span class="z-source z-swift">
+</span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">useOneDevice</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">    <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> device <span class="z-keyword z-operator z-assignment z-swift">=</span> IosHwToOsDevice<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span><span class="z-keyword z-other z-swift">get</span>(hardware: <span class="z-meta z-literal z-string z-swift"><span class="z-string z-quoted z-double z-swift">&quot;</span><span class="z-string z-quoted z-double z-swift">i</span><span class="z-string z-quoted z-double z-swift">P</span><span class="z-string z-quoted z-double z-swift">h</span><span class="z-string z-quoted z-double z-swift">o</span><span class="z-string z-quoted z-double z-swift">n</span><span class="z-string z-quoted z-double z-swift">e</span><span class="z-string z-quoted z-double z-swift">1</span><span class="z-string z-quoted z-double z-swift">0</span><span class="z-string z-quoted z-double z-swift">,</span><span class="z-string z-quoted z-double z-swift">1</span><span class="z-string z-quoted z-double z-swift">&quot;</span></span>) <span class="z-keyword z-control z-if z-swift">else</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">    <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">    <span class="z-comment z-line z-double-slash z-swift"><span class="z-punctuation z-definition z-comment z-line z-double-slash z-swift">//</span> Prints IosHwToOsDevice(hardware: &quot;iPhone10,1&quot;, version: &quot;16.7.7&quot;)</span>
+</span><span class="z-source z-swift">    print(<span class="z-meta z-literal z-string z-swift"><span class="z-string z-quoted z-double z-swift">&quot;</span><span class="z-support z-punctuation z-expression z-begin z-swift">\(</span><span class="z-meta z-expression z-swift">device</span><span class="z-support z-punctuation z-expression z-end z-swift">)</span><span class="z-string z-quoted z-double z-swift">&quot;</span></span>)
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p>Parsing the iOS version into a usable data structure / type is left as an exercise
+to the reader — we already have that at work — but it shouldn't be too
+hard and isn't strictly necessary from the point-of-view of the library.</p>
+<h1 id="some-wikipedia-some-yaml-some-json-some-rust-and-some-swift">Some Wikipedia, some YAML, some JSON, some Rust, and some Swift</h1>
+<p>I used Wikipedia as my source of information, specifically these pages —
+which are excellent:</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/List_of_iPhone_models">https://en.wikipedia.org/wiki/List_of_iPhone_models</a></li>
+<li><a href="https://en.wikipedia.org/wiki/List_of_iPad_models">https://en.wikipedia.org/wiki/List_of_iPad_models</a></li>
+</ul>
+<p>I manually copied the information into a YAML file, because even though I don't
+particularly like whitespace-as-strucutre, it has some features that JSON sorely
+lacks – readabilty &amp; comments. The file looks like this:</p>
+<pre data-lang="yaml" class="language-yaml z-code"><code class="language-yaml" data-lang="yaml"><span class="z-source z-yaml"><span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">devices</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span>
+</span><span class="z-source z-yaml"><span class="z-comment z-line z-number-sign z-yaml"><span class="z-punctuation z-definition z-comment z-line z-number-sign z-yaml">#</span> Supported iPad versions
+</span></span><span class="z-source z-yaml"><span class="z-punctuation z-definition z-block z-sequence z-item z-yaml">-</span> <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">type</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span> <span class="z-string z-unquoted z-plain z-out z-yaml">iPad</span>
+</span><span class="z-source z-yaml">  <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">version</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span> <span class="z-constant z-numeric z-float z-decimal z-yaml">17<span class="z-punctuation z-separator z-decimal z-yaml">.</span>4.1</span>
+</span><span class="z-source z-yaml">  <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">status</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span> <span class="z-string z-unquoted z-plain z-out z-yaml">Supported</span>
+</span><span class="z-source z-yaml">  <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">hardware</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span>
+</span><span class="z-source z-yaml">  <span class="z-punctuation z-definition z-block z-sequence z-item z-yaml">-</span> <span class="z-string z-unquoted z-plain z-out z-yaml">iPad13,18</span>
+</span><span class="z-source z-yaml">  <span class="z-punctuation z-definition z-block z-sequence z-item z-yaml">-</span> <span class="z-string z-unquoted z-plain z-out z-yaml">iPad13,19</span>
+</span><span class="z-source z-yaml">  <span class="z-comment z-line z-number-sign z-yaml"><span class="z-punctuation z-definition z-comment z-line z-number-sign z-yaml">#</span> ...more
+</span></span><span class="z-source z-yaml"><span class="z-comment z-line z-number-sign z-yaml"><span class="z-punctuation z-definition z-comment z-line z-number-sign z-yaml">#</span> Unsupported iPad versions
+</span></span><span class="z-source z-yaml"><span class="z-punctuation z-definition z-block z-sequence z-item z-yaml">-</span> <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">type</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span> <span class="z-string z-unquoted z-plain z-out z-yaml">iPad</span>
+</span><span class="z-source z-yaml">  <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">version</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span> <span class="z-constant z-numeric z-float z-decimal z-yaml">16<span class="z-punctuation z-separator z-decimal z-yaml">.</span>7.7</span>
+</span><span class="z-source z-yaml">  <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">status</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span> <span class="z-string z-unquoted z-plain z-out z-yaml">Unsupported</span>
+</span><span class="z-source z-yaml">  <span class="z-string z-unquoted z-plain z-out z-yaml"><span class="z-entity z-name z-tag z-yaml">hardware</span></span><span class="z-punctuation z-separator z-key-value z-mapping z-yaml">:</span>
+</span><span class="z-source z-yaml">  <span class="z-punctuation z-definition z-block z-sequence z-item z-yaml">-</span> <span class="z-string z-unquoted z-plain z-out z-yaml">iPad6,11</span>
+</span><span class="z-source z-yaml">  <span class="z-punctuation z-definition z-block z-sequence z-item z-yaml">-</span> <span class="z-string z-unquoted z-plain z-out z-yaml">iPad6,12</span>
+</span><span class="z-source z-yaml"><span class="z-comment z-line z-number-sign z-yaml"><span class="z-punctuation z-definition z-comment z-line z-number-sign z-yaml">#</span> ...more
+</span></span></code></pre>
+<p>I then use a very small Rust program to convert the YAML into JSON. The JSON file
+has a very different structure from the YAML file. The YAML file is structured
+to be easy to update, and is sectioned by type of device, while the JSON file
+is basically just an array of all the devices without any sectioning.</p>
+<pre data-lang="json" class="language-json z-code"><code class="language-json" data-lang="json"><span class="z-source z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span>
+</span></span><span class="z-source z-json"><span class="z-meta z-mapping z-json">  </span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>devices<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-punctuation z-section z-sequence z-begin z-json">[</span>
+</span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json">    <span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span>
+</span></span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-meta z-mapping z-json">      </span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>hardware<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>iPad13,18<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span>
+</span></span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-meta z-mapping z-value z-json">      </span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>version<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>17.4.1<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span>
+</span></span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-meta z-mapping z-value z-json">    <span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-separator z-sequence z-json">,</span>
+</span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json">    <span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span>
+</span></span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-meta z-mapping z-json">      </span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>hardware<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>iPad13,19<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span>
+</span></span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-meta z-mapping z-value z-json">      </span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>version<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>17.4.1<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span>
+</span></span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-meta z-mapping z-value z-json">    <span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-separator z-sequence z-json">,</span>
+</span></span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-invalid z-illegal z-expected-sequence-separator z-json">.</span><span class="z-invalid z-illegal z-expected-sequence-separator z-json">.</span><span class="z-invalid z-illegal z-expected-sequence-separator z-json">.</span><span class="z-invalid z-illegal z-expected-sequence-separator z-json">m</span><span class="z-invalid z-illegal z-expected-sequence-separator z-json">o</span><span class="z-invalid z-illegal z-expected-sequence-separator z-json">r</span><span class="z-invalid z-illegal z-expected-sequence-separator z-json">e</span>
+</span></span></span></code></pre>
+<p>After creating the JSON file, that one is copied over to <a href="https://github.com/bes/ios-hw-to-os-spm">ios-hw-to-os-spm</a>
+and packaged in a Swift package.</p>
+<h1 id="contributions-welcome">Contributions welcome</h1>
+<p>Want to expand <code>ios-hw-to-os</code> to cover Apple Watch? Maybe you need devices older
+than those that can run iOS 15? Do you want to add more fields or improve the Swift
+API? PRs are welcome, and I think I left reasonably
+clear instructions on how to manage the YAML / JSON structure.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

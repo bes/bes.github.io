@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/rust-2020-call-for-blogs/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Rust 2020 —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Rust 2020 —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Rust 2020 —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="We have all been called upon by the rust community
+to share our thoughts on what we want from Rust in 2020." />
+        <meta name="twitter:description" content="We have all been called upon by the rust community
+to share our thoughts on what we want from Rust in 2020.">
+        <meta property="og:description" content="We have all been called upon by the rust community
+to share our thoughts on what we want from Rust in 2020." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Rust 2020
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">31 October 2019 · reading time 2 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-2020-call-for-blogs/#more">More</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-2020-call-for-blogs/#less">Less</a>
+        </li>
+        
+    </ol>
+    
+
+<p>We have all been called upon by the rust community
+to share our thoughts on what we want from Rust in 2020.</p>
+<span id="continue-reading"></span>
+<p>My wants are centered around the developer/debug experience more than the language itself.
+I find the language to be expressive and attractive for many types of development,
+and I find the community to be very pleasant.</p>
+<h1 id="more">More</h1>
+<p>What do I want more of?</p>
+<h2 id="more-introspection">More introspection</h2>
+<h3 id="locally">Locally</h3>
+<p>This might be targeted at LLDB more than Rust proper, but what I want are
+more tools that are focused on letting the programmer understand what is going on
+inside a running debug build, without having to stop the program.</p>
+<p>A really nice tool that exists for Java is VisualVM.</p>
+<p>I have tried to find equivalent tools for Rust/LLDB/GDB but have not been able
+to find something that is both maintained and easy to use. Please let me know
+if I have missed anything, <a href="https://zkc.se/pages/about/">my contact information is available here</a>.</p>
+<p>Imagine being able to debug, learn, and draw conclusions from a live view into
+a running Rust binary. The state of each Thread. Stack information for each Thread. Time
+spent in each Thread. The number and size of Heap allocations. The current and
+historic number of active Threads.</p>
+<h3 id="on-the-server">On the server</h3>
+<p>It would be nice to be able to export those same metrics mentioned above to a metric
+aggregator, e.g. Prometheus.</p>
+<h2 id="more-ide">More IDE</h2>
+<p>I am an IntelliJ / CLion user so I would like to see improvements for the Rust plugin
+for CLion. It's already usable, but it needs more polish and more features.</p>
+<h1 id="less">Less</h1>
+<p>There was a section about disk usage here but then I found out about <code>cargo sweep</code> and <code>sccache</code>.</p>
+<p>That's what I want. Thank you for reading my incoherent ramblings.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
