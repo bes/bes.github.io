@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/remake-20yr-old-game/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>I remade a 20-year-old game to learn Bevy ECS —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="I remade a 20-year-old game to learn Bevy ECS —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="I remade a 20-year-old game to learn Bevy ECS —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I got the fantastic idea to learn Bevy ECS
+by recreating a game I developed with a friend a long time ago. The main goal is
+to remake the game, written in Java in the standard pointer soup programming
+style, using an Entity Component System—a kind of type system driven in-memory
+database geared towards game programming." />
+        <meta name="twitter:description" content="I got the fantastic idea to learn Bevy ECS
+by recreating a game I developed with a friend a long time ago. The main goal is
+to remake the game, written in Java in the standard pointer soup programming
+style, using an Entity Component System—a kind of type system driven in-memory
+database geared towards game programming.">
+        <meta property="og:description" content="I got the fantastic idea to learn Bevy ECS
+by recreating a game I developed with a friend a long time ago. The main goal is
+to remake the game, written in Java in the standard pointer soup programming
+style, using an Entity Component System—a kind of type system driven in-memory
+database geared towards game programming." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        I remade a 20-year-old game to learn Bevy ECS
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date"> 2 January 2025 · reading time 17 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/game-development/">game development</a></li>
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/ecs/">ecs</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/bevy/">bevy</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/remake-20yr-old-game/#gameplay">Gameplay</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/remake-20yr-old-game/#implementation-old-and-new">Implementation—old and new</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/remake-20yr-old-game/#entity-component-system">Entity Component System</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/remake-20yr-old-game/#bevy-ecs-inconveniences">Bevy ECS Inconveniences</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/remake-20yr-old-game/#final-notes">Final notes</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/remake-20yr-old-game/#references">References</a>
+        </li>
+        
+    </ol>
+    
+
+<p>I got the fantastic idea to learn <a href="https://crates.io/crates/bevy-ecs">Bevy ECS</a>
+by recreating a game I developed with a friend a long time ago. The main goal is
+to remake the game, written in Java in the standard pointer soup programming
+style, using an Entity Component System—a kind of type system driven in-memory
+database geared towards game programming.</p>
+<span id="continue-reading"></span>
+<p>In 2005 Stefan Li<sup class="footnote-reference"><a href="#stefan">1</a></sup> and I did a game for Värnpliktsrådet<sup class="footnote-reference"><a href="#vplr">2</a></sup>.
+Värnpliksrådet is a council for and by conscripts from the different branches of
+the Swedish Armed Forces. This year is the 20th anniversary of the game.
+Unrelated to that, I have a plan to use an Entity Component System<sup class="footnote-reference"><a href="#ecs">3</a></sup> for our
+new rendering engine at work. Let's see if I can transform a
+20-year-old Java Applet into a Rust WebAssembly game with a Bevy<sup class="footnote-reference"><a href="#bevy">4</a></sup> ECS
+core.</p>
+<pre data-lang="java" class="language-java z-code"><code class="language-java" data-lang="java"><span class="z-source z-java"> <span class="z-comment z-block z-java"><span class="z-punctuation z-definition z-comment z-java">/*</span> Created on 2005-sep-07 <span class="z-punctuation z-definition z-comment z-java">*/</span></span>
+</span></code></pre>
+<p>Blog bless whoever came up with automatic headers with dates in new files.</p>
+<h1 id="gameplay">Gameplay</h1>
+<div class="aside">
+<div id="vplgame" class="vplgame">
+    <script>
+      const enterFullscreen = () => {
+        const canvas = document.getElementById("vplgame");
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          canvas.requestFullscreen();
+        }
+      };
+    </script>
+
+    <canvas class="canvas" id="varnplikt" width="700" height="460">
+        This canvas should contain an instance of Värnpliktsspelet.
+    </canvas>
+    <img
+        class="fullscreen-button"
+        alt="Enter Fullscreen"
+        src="/vplgame/fullscreen.svg"
+        onclick="enterFullscreen();"
+    />
+
+    <script type="module">
+      import init, { GameHandle } from '/vplgame/pkg/wasm.js';
+
+      let animationFrameId = undefined;
+      const canvas = document.getElementById("varnplikt");
+      const ctx = canvas.getContext("2d");
+
+      async function startGame() {
+        const game = new GameHandle();
+
+        const checkbox = document.getElementById("debug");
+        checkbox.onclick = () => {
+          if (checkbox instanceof HTMLInputElement) {
+            game.debug(checkbox.checked)
+          }
+        };
+
+        const scaleXy = (bounds, x, y) => {
+          const scaleX = 700 / bounds.width;
+          const scaleY = 460 / bounds.height;
+          return [x * scaleX, y * scaleY];
+        };
+
+        canvas.addEventListener("mousemove", (e) => {
+          const bounds = canvas.getBoundingClientRect();
+          const [x, y] = scaleXy(bounds, e.offsetX, e.offsetY);
+          game.mouse(x, y);
+        });
+
+        canvas.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        canvas.addEventListener("mouseup", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const bounds = canvas.getBoundingClientRect();
+          const [x, y] = scaleXy(bounds, e.offsetX, e.offsetY);
+          game.mouseUp(x, y);
+        });
+
+        const touchMove = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e instanceof TouchEvent) {
+            if (e.changedTouches.length > 0) {
+              if (e) {
+                const bounds = canvas.getBoundingClientRect();
+                const [x, y] = scaleXy(bounds, e.changedTouches[0].clientX - bounds.left, e.changedTouches[0].clientY - bounds.top);
+                game.mouse(x, y);
+              }
+            }
+          }
+        };
+
+        canvas.addEventListener("touchmove", touchMove);
+        canvas.addEventListener("touchstart", touchMove);
+        canvas.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e instanceof TouchEvent) {
+            if (e.changedTouches.length > 0) {
+              if (e) {
+                const bounds = canvas.getBoundingClientRect();
+                const [x, y] = scaleXy(bounds, e.changedTouches[0].clientX - bounds.left, e.changedTouches[0].clientY - bounds.top);
+                game.mouseUp(x, y);
+              }
+            }
+          }
+        });
+
+        function loadImage(key, url) {
+          const img = new Image();
+          img.src = url;
+          return new Promise((resolve, reject) => {
+            img.onload = () => {
+              game.addResource(key, img);
+              resolve();
+            }
+            img.onerror = (error) => {
+              reject(error);
+            };
+          });
+        }
+
+        const audioCtx = new AudioContext();
+
+        function loadAudio(key, url) {
+          return new Promise(async (resolve, reject) => {
+            try {
+              let resp = await fetch(url);
+              let arrayBuffer = await resp.arrayBuffer();
+              const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+              game.addAudio(key, audioBuffer, playAudio);
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          });
+        }
+
+        // Called from Rust
+        function playAudio(audioBuffer) {
+          audioCtx.resume();
+          const source = audioCtx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(audioCtx.destination);
+          source.start();
+        }
+
+        const promises = [];
+        promises.push(loadImage("steffes", "/vplgame/gfx/steffes.jpg"));
+        promises.push(loadImage("bamse_arm", "/vplgame/gfx/bamse_arm.png"));
+        promises.push(loadImage("bamse_base", "/vplgame/gfx/bamse_base.png"));
+        promises.push(loadImage("tanks/missil_00", "/vplgame/gfx/tanks/missil_00.gif"));
+        promises.push(loadImage("tanks/05_herka_stroke", "/vplgame/gfx/tanks/05_herka_stroke.gif"));
+        promises.push(loadImage("tanks/r05_herka_stroke", "/vplgame/gfx/tanks/r05_herka_stroke.gif"));
+        promises.push(loadImage("tanks/truck_ammo", "/vplgame/gfx/tanks/truck_ammo.gif"));
+        promises.push(loadImage("011_bomb", "/vplgame/gfx/011_bomb.gif"));
+
+        promises.push(loadImage("smoke/001", "/vplgame/gfx/smoke/001.png"));
+        promises.push(loadImage("smoke/002", "/vplgame/gfx/smoke/002.png"));
+        promises.push(loadImage("smoke/003", "/vplgame/gfx/smoke/003.png"));
+        promises.push(loadImage("smoke/004", "/vplgame/gfx/smoke/004.png"));
+        promises.push(loadImage("smoke/005", "/vplgame/gfx/smoke/005.png"));
+        promises.push(loadImage("smoke/006", "/vplgame/gfx/smoke/006.png"));
+        promises.push(loadImage("smoke/007", "/vplgame/gfx/smoke/007.png"));
+
+        promises.push(loadImage("explosion/001", "/vplgame/gfx/explosion/001.gif"));
+        promises.push(loadImage("explosion/002", "/vplgame/gfx/explosion/002.gif"));
+        promises.push(loadImage("explosion/003", "/vplgame/gfx/explosion/003.gif"));
+        promises.push(loadImage("explosion/004", "/vplgame/gfx/explosion/004.gif"));
+        promises.push(loadImage("explosion/005", "/vplgame/gfx/explosion/005.gif"));
+        promises.push(loadImage("explosion/006", "/vplgame/gfx/explosion/006.gif"));
+        promises.push(loadImage("explosion/007", "/vplgame/gfx/explosion/007.gif"));
+        promises.push(loadImage("explosion/008", "/vplgame/gfx/explosion/008.gif"));
+
+        promises.push(loadImage("bridge/001", "/vplgame/gfx/bridge/001.jpg"));
+        promises.push(loadImage("bridge/002", "/vplgame/gfx/bridge/002.jpg"));
+        promises.push(loadImage("bridge/003", "/vplgame/gfx/bridge/003.jpg"));
+        promises.push(loadImage("bridge/004", "/vplgame/gfx/bridge/004.jpg"));
+        promises.push(loadImage("bridge/005", "/vplgame/gfx/bridge/005.jpg"));
+        promises.push(loadImage("bridge/006", "/vplgame/gfx/bridge/006.jpg"));
+        promises.push(loadImage("bridge/007", "/vplgame/gfx/bridge/007.jpg"));
+        promises.push(loadImage("bridge/008", "/vplgame/gfx/bridge/008.jpg"));
+        promises.push(loadImage("bridge/009", "/vplgame/gfx/bridge/009.jpg"));
+        promises.push(loadImage("bridge/010", "/vplgame/gfx/bridge/010.jpg"));
+        promises.push(loadImage("bridge/011", "/vplgame/gfx/bridge/011.jpg"));
+        promises.push(loadImage("bridge/012", "/vplgame/gfx/bridge/012.jpg"));
+        promises.push(loadImage("bridge/013", "/vplgame/gfx/bridge/013.jpg"));
+        promises.push(loadImage("bridge/014", "/vplgame/gfx/bridge/014.jpg"));
+        promises.push(loadImage("bridge/015", "/vplgame/gfx/bridge/015.jpg"));
+
+        promises.push(loadAudio("01_explosion", "/vplgame/audio/01_explosion.wav"));
+        promises.push(loadAudio("01_missile", "/vplgame/audio/01_missile.wav"));
+
+        try {
+          await Promise.all(promises);
+        } catch (e) {
+          console.error(e);
+        }
+
+        function renderLoop() {
+          game.update(ctx, window.performance.now(), 700, 460);
+          animationFrameId = window.requestAnimationFrame(renderLoop);
+        }
+
+        renderLoop();
+      }
+
+      async function run() {
+        await init();
+        await startGame();
+      }
+
+      run();
+    </script>
+</div>
+<div>
+    <input id="debug" type="checkbox"/><label for="debug">Debug bounding boxes</label>
+</div>
+👆Play it yourself. For extra retro fun: try fullscreen 👾
+</div>
+<p>On the surface, Värnpliktsspelet is a simple game: Protect the trucks filled
+with conscripts and ammo using your ground-to-air BAMSE<sup class="footnote-reference"><a href="#bamse">5</a></sup> missile launcher
+during a training exercise. The threat is airplanes of the type C-130
+Hercules<sup class="footnote-reference"><a href="#hercules">6</a></sup> that have been mistakenly loaded with real bombs!</p>
+<p>There are several resource management and tactics dimensions to the game, which
+has an intense action flavor. You have a limited amount of missiles, and you
+need to use them to protect your BAMSE system, a bridge, and the ammo trucks.</p>
+<p>You get upgrades on every level that is divisible by three: Level 3, 6, 9, and
+so on: Faster missiles, capacity to store more missiles, and repairs for BAMSE
+and the bridge.</p>
+<h2 id="resource-management">Resource management</h2>
+<p>You can try to knock out an airplane using two missiles, or take out a bomb
+using one missile. At first that equation seems simple: Each airplane can drop
+three bombs, so it's cheaper to take out an airplane; and the decision keeps
+getting easier since the airplanes carry more bombs each round. The problem is
+that there are a lot of planes, and a lot of bombs being dropped. Unless you
+focus at least some of the missiles on cleaning up bombs, you will run out of
+ammo.</p>
+<h2 id="strategy">Strategy</h2>
+<p>The bridge can take some damage, but can get repaired if you survive long
+enough, meaning you can let it take a few hits. BAMSE can also take a few hits,
+but beware: As long as BAMSE is damaged, missiles will behave unpredictably!
+Ammo trucks can take two hits, which means that they can act as a shield for the
+bridge, and for BAMSE. You can even sacrifice a few trucks since the trucks
+carry a lot more ammunition than you can use, at least in the beginning.</p>
+<p>The firing arm can't be rotated to fire straight up, so you have to have the
+right timing and be frugal with missiles to defend the ramp from bombs coming
+from straight above. Some bombs will be borderline impossible to defend.</p>
+<h1 id="implementation-old-and-new">Implementation—old and new</h1>
+<h2 id="threads">Threads</h2>
+<p>The old Java implementation had code running across three threads:
+<code>RenderThread</code>, <code>LevelThread</code>, and <code>MoveThread</code>. It incorrectly peppered the
+<code>synchronized</code> keyword on member fields, but not a single <code>synchronized</code> block
+which I'm sure wasn't very correct. The new Rust implementation
+uses one thread—the JavaScript main thread—and a few <code>Mutex</code>es to appease the
+borrow checker. The Java implementation should have used just one thread too.</p>
+<h2 id="framerate">Framerate</h2>
+<p>To keep the framerate and other parts of the program consistent, the Java
+implementation makes liberal use of <code>Thread.sleep</code>, opting for <code>sleep(40)</code> to
+control the framerate. Using a 40-millisecond sleep is equivalent to 25 fps. The
+render loop also handled spurious thread wakes by doing a bit of extra sleep in
+a loop until the target sleep time was reached.</p>
+<p>Instead of interpolating the positions of the different moveable elements, there
+was a 50 milliseconds sleep in the <code>MoveThread</code>. Why 50 millis in the
+<code>MoveThread</code>, but 40 in the <code>RenderThread</code>? I wish I could tell you. I'm not proud.
+Any hiccups in the <code>MoveThread</code> would have caused the graphics to stall. That
+might have been an OK call for a single player game, but I think time based
+interpolation is generally the correct way to handle animation so that's
+something that will change in the new implementation.</p>
+<p>The new implementation uses time based interpolation for movement and
+animations, and <code>requestAnimationFrame</code><sup class="footnote-reference"><a href="#raf">7</a></sup> to drive the updates from JavaScript.
+Using <code>requestAnimationFrame</code> gives the game a framerate that matches the
+display refresh rate.</p>
+<h2 id="hilariously-bad-bounding-boxes">Hilariously bad bounding boxes</h2>
+<p>Missiles need to be rotated when fired, and the canvas API can do that just fine
+with some calls to <code>save</code>, <code>translate</code>, <code>rotate</code>, and <code>restore</code></p>
+<p>Bounding boxes aren't much trickier, but I wanted to stay true to the original
+game, so no fancy matrix transforms, just this fabulous bounding box:</p>
+<div class="aside">
+    <div class="aside-title"><p>missile bounding box size</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">rotated_size</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-variable z-parameter z-rust">self</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> <span class="z-meta z-function z-return-type z-rust"><span class="z-punctuation z-separator z-rust">-&gt;</span> Size</span> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-path z-rust">Size<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust">        <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>width <span class="z-keyword z-operator z-arithmetic z-rust">*</span> <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>rotation<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">cos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-arithmetic z-rust">+</span> <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>height <span class="z-keyword z-operator z-arithmetic z-rust">*</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span><span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>rotation<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">sin</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust">        <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>width <span class="z-keyword z-operator z-arithmetic z-rust">*</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span><span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>rotation<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">sin</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-arithmetic z-rust">+</span> <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>height <span class="z-keyword z-operator z-arithmetic z-rust">*</span> <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>rotation<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">cos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust">    </span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<p>The bounding box is a bit larger than necessary, but that's not a problem I care
+about. This is a problem I care about:</p>
+<div class="aside">
+    <div class="aside-title"><p>Terrible bounding box</p>
+</div>
+    
+    <a class="image" href=".&#x2F;bounding_box_1.png">
+        <img src=".&#x2F;bounding_box_1.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+</div>
+<p>Images are drawn from pixel <code>(0,0)</code>, not from the center of the image, which
+needs to be adjusted for. The old game didn't do this, but I felt leaving that
+bug in was a bridge too far. So we need to draw from the middle of the image,
+but we also need to adjust all the bounding box intersection calculations.
+Here's the code for adjusting the drawing of the missile:</p>
+<div class="aside">
+    <div class="aside-title"><p>missile image draw code</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust">canvas<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">save</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">canvas<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">translate</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>position<span class="z-punctuation z-accessor z-dot z-rust">.</span>x<span class="z-punctuation z-separator z-rust">,</span> position<span class="z-punctuation z-accessor z-dot z-rust">.</span>y</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">canvas<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">rotate</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>angle</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Draw the image centered on (x, y)
+</span></span><span class="z-source z-rust">canvas<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">draw_image</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>missile_img<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">as_ref</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span>size<span class="z-punctuation z-accessor z-dot z-rust">.</span>width <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">2.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span>size<span class="z-punctuation z-accessor z-dot z-rust">.</span>height <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">2.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">canvas<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">restore</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></code></pre>
+
+    
+</div>
+<p>which is obviously better</p>
+<div class="aside">
+    <div class="aside-title"><p>Much better</p>
+</div>
+    
+    <a class="image" href=".&#x2F;bounding_box_2.png">
+        <img src=".&#x2F;bounding_box_2.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+</div>
+<h2 id="javascript-fun-and-rust-separation-of-concerns">JavaScript fun and Rust separation of concerns</h2>
+<p>Input (<code>mousemove</code>, <code>touchmove</code>, <code>mouseup</code>, and so on), resources (images,
+sounds), and audio playback are handled by JavaScript. You can read all the
+JavaScript glue code by inspecting the source of this page in your browser.</p>
+<p>The Rust code is split into two parts: A <code>wasm</code> package, that contains the
+wasm-bindgen<sup class="footnote-reference"><a href="#bindgen">8</a></sup> code and implementations of the JavaScript shims for the
+<code>Canvas</code> and <code>PlayAudio</code> traits defined in the main <code>engine</code> package. Separating the
+implementation from the host wasn't really necessary since I'm not planning on
+implementing the game for any other platform than the web, but it was useful
+insofar that I got some confidence that such a split will work for my real
+project at work.</p>
+<p>The <code>Audio</code> trait is very simple; it's defined in the <code>engine</code> package</p>
+<div class="aside">
+    <div class="aside-title"><p>engine</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-trait z-rust">trait</span> <span class="z-entity z-name z-trait z-rust">Audio</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">play</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-variable z-parameter z-rust">self</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<p>and implemented in the <code>wasm</code> package</p>
+<div class="aside">
+    <div class="aside-title"><p>wasm</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-struct z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-struct z-rust">struct</span> </span><span class="z-meta z-struct z-rust"><span class="z-entity z-name z-struct z-rust">AudioWeb</span> </span><span class="z-meta z-struct z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-struct z-rust"><span class="z-meta z-block z-rust">    <span class="z-variable z-other z-member z-rust">audio</span><span class="z-punctuation z-separator z-type z-rust">:</span> AudioBuffer,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-struct z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> A JavaScript function called playAudio that uses an AudioContext
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-struct z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> to be able to play multiple sounds at the same time.
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-struct z-rust"><span class="z-meta z-block z-rust">    <span class="z-variable z-other z-member z-rust">play_fn</span><span class="z-punctuation z-separator z-type z-rust">:</span> <span class="z-meta z-path z-rust">web_sys<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-path z-rust">js_sys<span class="z-punctuation z-accessor z-rust">::</span></span>Function,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-struct z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span><span class="z-source z-rust">
+</span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-storage z-type z-impl z-rust">impl</span> </span><span class="z-meta z-impl z-rust"><span class="z-entity z-name z-impl z-rust">AudioWeb</span> </span><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">new</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-variable z-parameter z-rust">audio</span><span class="z-punctuation z-separator z-rust">:</span> AudioBuffer, <span class="z-variable z-parameter z-rust">play_fn</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-path z-rust">web_sys<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-path z-rust">js_sys<span class="z-punctuation z-accessor z-rust">::</span></span>Function</span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> <span class="z-meta z-function z-return-type z-rust"><span class="z-punctuation z-separator z-rust">-&gt;</span> AudioWeb</span> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">        AudioWeb <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span> audio<span class="z-punctuation z-separator z-rust">,</span> play_fn </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span><span class="z-source z-rust">
+</span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-storage z-type z-impl z-rust">impl</span> </span><span class="z-meta z-impl z-rust">Audio <span class="z-keyword z-other z-rust">for</span></span><span class="z-meta z-impl z-rust"> <span class="z-entity z-name z-impl z-rust">AudioWeb</span> </span><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">play</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-variable z-parameter z-rust">self</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">        <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>play_fn<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">call1</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-meta z-path z-rust">JsValue<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-constant z-other z-rust">NULL</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>audio</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">unwrap</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-impl z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<p>Similarly, but much more code, for the <code>Canvas</code> trait.</p>
+<h2 id="lines-of-code">Lines of code</h2>
+<p>This is mostly a feature-for-feature remake of the original game, with some
+additional bug fixes and arguably better structured code, so I wanted to see how
+that affected the line count. Lines counted by tokei<sup class="footnote-reference"><a href="#tokei">9</a></sup></p>
+<p><strong>Java Applet</strong></p>
+<pre data-lang="text" class="language-text z-code"><code class="language-text" data-lang="text"><span class="z-text z-plain">===============================================================================
+</span><span class="z-text z-plain"> Language            Files        Lines         Code     Comments       Blanks
+</span><span class="z-text z-plain">===============================================================================
+</span><span class="z-text z-plain"> HTML                    2           28           19            1            8
+</span><span class="z-text z-plain"> Java                   24         2963         2094          320          549
+</span><span class="z-text z-plain">===============================================================================
+</span><span class="z-text z-plain"> Total                  26         2991         2113          321          557
+</span><span class="z-text z-plain">==============================================================================
+</span></code></pre>
+<p><strong>Rust</strong></p>
+<pre data-lang="text" class="language-text z-code"><code class="language-text" data-lang="text"><span class="z-text z-plain">===============================================================================
+</span><span class="z-text z-plain"> Language            Files        Lines         Code     Comments       Blanks
+</span><span class="z-text z-plain">===============================================================================
+</span><span class="z-text z-plain"> Shell                   1           10            5            2            3
+</span><span class="z-text z-plain"> TOML                    3           90           62           17           11
+</span><span class="z-text z-plain">-------------------------------------------------------------------------------
+</span><span class="z-text z-plain"> HTML                    1           14           13            0            1
+</span><span class="z-text z-plain"> |- JavaScript           1          176          152            1           23
+</span><span class="z-text z-plain"> (Total)                            190          165            1           24
+</span><span class="z-text z-plain">-------------------------------------------------------------------------------
+</span><span class="z-text z-plain"> Rust                   40         2317         2077            9          231
+</span><span class="z-text z-plain"> |- Markdown             2            3            0            3            0
+</span><span class="z-text z-plain"> (Total)                           2320         2077           12          231
+</span><span class="z-text z-plain">===============================================================================
+</span><span class="z-text z-plain"> Total                  45         2431         2157           28          246
+</span><span class="z-text z-plain">===============================================================================
+</span></code></pre>
+<p>The Rust implementation has 44 more lines, but the Java repository doesn't have
+any shell scripts for building artifacts, and is missing at least a JAR
+manifest. When I set out to do this I thought Rust would fare a bit better than
+what it did, but maybe Rust code is a bit more verbose than I give it credit
+for. Let's call it a draw.</p>
+<h1 id="entity-component-system">Entity Component System</h1>
+<p>Let's hear what Wikipedia has to say about ECS<sup class="footnote-reference"><a href="#ecs">3</a></sup></p>
+<blockquote>
+<p>Entity–component–system (ECS) is a software architectural pattern mostly used
+in video game development for the representation of game world objects.
+An ECS comprises entities composed from components of data, with systems
+which operate on the components.</p>
+</blockquote>
+<p>"A monad is a monoid in the category of endofunctors"<sup class="footnote-reference"><a href="#monad">10</a></sup> what?</p>
+<p>I'll spend the following sections trying to explain what an Entity Component
+System is, and how Bevy ECS<sup class="footnote-reference"><a href="#bevy-ecs">11</a></sup> works. The TL;DR is "a database that
+makes it possible to avoid the pointer soup software architecture". I just made
+that up.</p>
+<div id="bevy-pin"></div>
+<p>I feel like I've only scratched the surface of what Bevy ECS can do. Correctly
+utilized it promises parallel execution of systems that don't have overlapping
+queries, which seems in line with the promises of Rust's fearless concurrency
+story. I've had a few runtime panics from <em>holding it wrong</em>, which mostly
+isn't a thing in Rust from my five odd years of experience, so we will need to
+build an intuition around how to avoid those crashes.</p>
+<p>Put a pin in that last sentence, we'll revisit it a little later.</p>
+<h2 id="entities-and-components">Entities and components</h2>
+<p>Entities are instantiated by combining one or more components, each component
+being an attribute of the entity and often one or more pieces of data associated
+with the component. A unit in a strategy game would have a <code>Weapon</code>, a
+<code>Position</code>, a <code>Team</code>, a <code>Faction</code> etc. <code>Position</code> being a mutable <code>(x, y)</code>
+tuple, <code>Faction</code> being <code>terran</code>, <code>protoss</code>, or <code>zerg</code>.</p>
+<div class="aside">
+    <div class="aside-title"><p>Like a database</p>
+</div>
+    
+    <a class="image" href=".&#x2F;ecs.svg">
+        <img src=".&#x2F;ecs.svg" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+    <p>Image by <a href="https://commons.wikimedia.org/w/index.php?title=File:ECS_Simple_Layout.svg&amp;oldid=868167885">Guypeter4</a>
+(<a href="https://creativecommons.org/publicdomain/zero/1.0/deed.en">CC0</a>)</p>
+
+    
+</div>
+<p>I think I would have put the entities as the rows and the components as the
+columns, probably. That's the way I think about entities anyway; an entity is a
+row in a database with a checkmark in every column for the different components
+that entity has.</p>
+<p>In Värnpliktsspelet there are missiles, enemies, friends, a bridge and so on. A
+missile is instantiated every time a <code>mouseup</code> or <code>touchup</code> event is registered
+by the web browser.</p>
+<div id="spawn-missile"></div>
+<div class="aside">
+    <div class="aside-title"><p>Spawning a missile</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-storage z-type z-rust">let</span> angle <span class="z-keyword z-operator z-assignment z-rust">=</span> ramp<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">angle</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>mouse_position</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-storage z-type z-rust">let</span> random_factor <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-path z-rust">MissileRamp<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-constant z-other z-rust">MAX_HEALTH</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span> health<span class="z-punctuation z-accessor z-dot z-rust">.</span>health</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">5</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-storage z-type z-rust">let</span> missile_speed <span class="z-keyword z-operator z-assignment z-rust">=</span> ramp<span class="z-punctuation z-accessor z-dot z-rust">.</span>missile_speed <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">commands<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">spawn</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    <span class="z-meta z-path z-rust">Missile<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">        angle<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">        random_factor<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">        time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now <span class="z-keyword z-operator z-arithmetic z-rust">+</span> random<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">next_float</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-float z-rust">300.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">u64</span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    </span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    <span class="z-meta z-path z-rust">Position<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-float z-rust">33.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-constant z-numeric z-float z-rust">390.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    <span class="z-meta z-path z-rust">Size<span class="z-punctuation z-accessor z-rust">::</span></span>new_with_rotation<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-float z-rust">46.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-constant z-numeric z-float z-rust">24.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-separator z-rust">,</span> angle</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    <span class="z-meta z-path z-rust">Speed<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>missile_speed <span class="z-keyword z-operator z-arithmetic z-rust">*</span> angle<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">cos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span> missile_speed <span class="z-keyword z-operator z-arithmetic z-rust">*</span> angle<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">sin</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    <span class="z-meta z-path z-rust">Timestamp<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">    Bounded<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust"></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></code></pre>
+
+    
+</div>
+
+<p>The "missile entity", when spawned, is given the components <code>Missile</code>,
+<code>Position</code>, <code>Size</code>, <code>Speed</code>, <code>Timestamp</code> and <code>Bounded</code>. Most of those are
+self-explanatory, but <code>Timestamp</code> and <code>Bounded</code> might need a few words:
+<code>Timestamp</code> is used to track <em>when</em> an entity last moved—for
+interpolation—and <code>Bounded</code> is a marker component that is used to query
+any entity that should be despawned when going out-of-bounds.</p>
+<p>Notice that we don't give entities names, and entities don't have a custom
+type: every entity is a <code>bevy_ecs::entity::Entity</code>. Entities are automatically
+given an id that you can save for later, but I didn't need to do that once for
+this game.</p>
+<p>Every time an entity is spawned it is added to the "database" of rows
+(or columns, whatever is more intuitive to you), and it can be queried out
+of the database and manipulated by systems.</p>
+<h2 id="systems">Systems</h2>
+<p>Systems interact with the <code>World</code> by implementing functions that <code>Query</code> the
+world for entities. Systems also retrieve resources and events. All of that is
+supported by some type system magic, making it possible to just declare
+what you need as function parameters—in any order—and it mostly does what you
+think it does.</p>
+<div class="aside">
+    <div class="aside-title"><p>A fairly complex but readable system declaration</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-documentation z-rust"><span class="z-punctuation z-definition z-comment z-rust">///</span> This system recieves MouseUpEvents and performs world actions based on those
+</span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">mouse_up_system</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> New events
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">evts</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">EventReader<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>MouseUpEvent<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> The current game state, clicking &quot;Start&quot; on the initial screen
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> will mutate the game state by changing it from `Init` to `Running`
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">state</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">ResMut<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>GameState<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Commands spawn and despwan entities
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">commands</span><span class="z-punctuation z-separator z-rust">:</span> Commands,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> We need access to the missile ramp to fire missiles
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">query_missile_ramp</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Query<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> MissileRamp, <span class="z-keyword z-operator z-rust">&amp;</span>MousePosition, <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Health<span class="z-punctuation z-section z-group z-end z-rust">)</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Current world time in milliseconds
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">time</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Res<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>Time<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Any respectable game has an RNG
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">random</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">NonSend<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-meta z-generic z-rust">Arc<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>dyn Random<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> ...
+</span></span></span></span></code></pre>
+
+    
+</div>
+<p>Värnpliktsspelet is a tiny game, but I feel it has <em>a lot</em> of systems. I'd
+imagine a huge game having a lot more but even the modest amount of systems in
+this game take some mental effort to keep track of. Having a <em>system</em> for
+structuring the ECS systems across different modules is required for any game
+even slightly larger than this one. Maintaining discipline by not putting too
+many things into one system also seems important to be able to maintain and
+understand them over time.</p>
+<div class="aside">
+    <div class="aside-title"><p>Lots of systems</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust">schedule<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">add_systems</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>reset_system</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">schedule<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">add_systems</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>missile_ramp_mouse_system</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">schedule<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">add_systems</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>mouse_position_system</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">schedule<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">add_systems</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>mouse_up_system</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">schedule<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">add_systems</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>next_level_missile_ramp_system</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">schedule<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">add_systems</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>generator_system<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">run_if</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>run_if_game_state_running</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> And 21 more ...
+</span></span></code></pre>
+<p>27 systems by my count</p>
+
+    
+</div>
+<p>My biggest struggle with these systems is that I started out with very few
+components for the entities—I think most programmers feel <em>smart</em> when
+we reuse things, doing the whole DRY thing and whatnot. But my (somewhat small)
+amount of ECS experience tells me that I need to keep component reuse <em>dumb</em>.
+<code>Position</code> and <code>MousePosition</code> are <em>different things</em>. I felt smart reusing the
+<code>Position</code> component for my mouse position entity: <code>Mouse</code> and <code>Position</code>
+together. But any query for things with a <code>Position</code> would also bring in the
+<code>Mouse</code> causing a few minutes of confusion when the mouse position started to
+jitter.</p>
+<p>Let's have a look at the smoke system. When missiles travel across the screen
+they leave trails of smoke that animate and move.</p>
+<div class="aside">
+    <div class="aside-title"><p>Smoke system</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">spawn_smoke_system</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Commands let you spawn or despawn entities
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">commands</span><span class="z-punctuation z-separator z-rust">:</span> Commands,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> An iterable query with mutable missiles 
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">query</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Query<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Missile, <span class="z-keyword z-operator z-rust">&amp;</span>Position, <span class="z-keyword z-operator z-rust">&amp;</span>Speed, <span class="z-keyword z-operator z-rust">&amp;</span>Size<span class="z-punctuation z-section z-group z-end z-rust">)</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Time is a global, called a Resource in Bevy ECS
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">time</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Res<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>Time<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Another global, but this one is !Send
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Using Arc here is a bit nonsensical but whatever
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">random</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">NonSend<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-meta z-generic z-rust">Arc<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>dyn Random<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-keyword z-control z-rust">for</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-storage z-modifier z-rust">mut</span> missile<span class="z-punctuation z-separator z-rust">,</span> position<span class="z-punctuation z-separator z-rust">,</span> speed<span class="z-punctuation z-separator z-rust">,</span> size</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">in</span> <span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> query <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-keyword z-control z-rust">if</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>smoke_counter <span class="z-keyword z-operator z-comparison z-rust">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">0</span> <span class="z-keyword z-operator z-logical z-rust">&amp;&amp;</span> time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now <span class="z-keyword z-operator z-comparison z-rust">&gt;</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>next_smoke_time <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>smoke_counter <span class="z-keyword z-operator z-assignment z-rust">-=</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">1</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>next_smoke_time <span class="z-keyword z-operator z-assignment z-rust">=</span> time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now <span class="z-keyword z-operator z-arithmetic z-rust">+</span> random<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">next_float</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-float z-rust">300.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">u64</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> smoke_decrease_x <span class="z-keyword z-operator z-assignment z-rust">=</span> speed<span class="z-punctuation z-accessor z-dot z-rust">.</span>x <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">5.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> smoke_decrease_y <span class="z-keyword z-operator z-assignment z-rust">=</span> speed<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">5.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> ang_x <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span><span class="z-constant z-numeric z-float z-rust">10.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>angle<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">cos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-arithmetic z-rust">+</span> <span class="z-constant z-numeric z-float z-rust">10.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>angle<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">sin</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> ang_y <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span><span class="z-constant z-numeric z-float z-rust">3.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>angle<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">cos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-arithmetic z-rust">+</span> <span class="z-constant z-numeric z-float z-rust">3.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>angle<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">sin</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> offset_x <span class="z-keyword z-operator z-assignment z-rust">=</span> size<span class="z-punctuation z-accessor z-dot z-rust">.</span>width <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">2.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">+</span> ang_x<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> offset_y <span class="z-keyword z-operator z-assignment z-rust">=</span> size<span class="z-punctuation z-accessor z-dot z-rust">.</span>height <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">2.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">+</span> ang_y<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> dx <span class="z-keyword z-operator z-assignment z-rust">=</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>smoke_counter <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> smoke_decrease_x <span class="z-keyword z-operator z-arithmetic z-rust">-</span> offset_x<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-storage z-type z-rust">let</span> dy <span class="z-keyword z-operator z-assignment z-rust">=</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>smoke_counter <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> smoke_decrease_y <span class="z-keyword z-operator z-arithmetic z-rust">-</span> offset_y<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            commands<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">spawn</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-meta z-path z-rust">Smoke<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now <span class="z-keyword z-operator z-arithmetic z-rust">+</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">200</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-meta z-path z-rust">Position<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>position<span class="z-punctuation z-accessor z-dot z-rust">.</span>x <span class="z-keyword z-operator z-arithmetic z-rust">-</span> dx<span class="z-punctuation z-separator z-rust">,</span> position<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-arithmetic z-rust">-</span> dy</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-meta z-path z-rust">Size<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-float z-rust">16.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-constant z-numeric z-float z-rust">16.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Smoke moves to the left with a random amount 0-10
+</span></span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> and upwards -4 per time unit.
+</span></span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-meta z-path z-rust">Speed<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>random<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">next_float</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-float z-rust">10.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-keyword z-operator z-arithmetic z-rust">-</span><span class="z-constant z-numeric z-float z-rust">4.</span><span class="z-constant z-numeric z-float z-rust">0</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                <span class="z-meta z-path z-rust">Timestamp<span class="z-punctuation z-accessor z-rust">::</span></span>new<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                Moveable<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">                Bounded<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-group z-rust"><span class="z-meta z-group z-rust">            </span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">    </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<p>Notice how when we spawn <code>Smoke</code>, we add a <code>Moveable</code> component. That's because
+almost everything that moves on screen is <code>Moveable</code> and is handled by this
+simple system:</p>
+<div class="aside">
+    <div class="aside-title"><p>Moving movables</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">move_moveables_system</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">time</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Res<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>Time<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Any Moveable that has a Position, a Speed, and a Timestamp
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">query</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Query<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Position, <span class="z-keyword z-operator z-rust">&amp;</span>Speed, <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Timestamp<span class="z-punctuation z-section z-group z-end z-rust">)</span>, <span class="z-meta z-generic z-rust">With<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>Moveable<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-keyword z-control z-rust">for</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-storage z-modifier z-rust">mut</span> position<span class="z-punctuation z-separator z-rust">,</span> speed<span class="z-punctuation z-separator z-rust">,</span> <span class="z-storage z-modifier z-rust">mut</span> timestamp</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">in</span> <span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> query <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> There might be rounding errors to take into account for
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> interpolation, but I Have Zero Fucks Left To Give
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-storage z-type z-rust">let</span> diff <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now <span class="z-keyword z-operator z-arithmetic z-rust">-</span> timestamp<span class="z-punctuation z-accessor z-dot z-rust">.</span>time</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span> <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">120.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        position<span class="z-punctuation z-accessor z-dot z-rust">.</span>x <span class="z-keyword z-operator z-assignment z-rust">+=</span> diff <span class="z-keyword z-operator z-arithmetic z-rust">*</span> speed<span class="z-punctuation z-accessor z-dot z-rust">.</span>x<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        position<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-assignment z-rust">+=</span> diff <span class="z-keyword z-operator z-arithmetic z-rust">*</span> speed<span class="z-punctuation z-accessor z-dot z-rust">.</span>y<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        timestamp<span class="z-punctuation z-accessor z-dot z-rust">.</span>time <span class="z-keyword z-operator z-assignment z-rust">=</span> time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">    </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<p>But missiles can have a bit of randomness to them if the missile ramp is
+damaged, so we need a separate system for that. To make sure missiles aren't
+moved twice, missiles aren't <code>Moveable</code>—we simply don't add <code>Moveable</code> when we
+<a href="#spawn-missile">spawn a <code>Missile</code></a>.</p>
+<div class="aside">
+    <div class="aside-title"><p>Moving missiles</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">move_missiles_system</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">time</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Res<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>Time<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> All Missiles
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">query</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Query<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span>Missile, <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Position, <span class="z-keyword z-operator z-rust">&amp;</span>Speed, <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Timestamp<span class="z-punctuation z-section z-group z-end z-rust">)</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-variable z-parameter z-rust">random</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">NonSend<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-meta z-generic z-rust">Arc<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>dyn Random<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-keyword z-control z-rust">for</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>missile<span class="z-punctuation z-separator z-rust">,</span> <span class="z-storage z-modifier z-rust">mut</span> position<span class="z-punctuation z-separator z-rust">,</span> speed<span class="z-punctuation z-separator z-rust">,</span> <span class="z-storage z-modifier z-rust">mut</span> timestamp</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">in</span> <span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> query <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Might even be a negative amount of fucks, actually
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-storage z-type z-rust">let</span> diff <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now <span class="z-keyword z-operator z-arithmetic z-rust">-</span> timestamp<span class="z-punctuation z-accessor z-dot z-rust">.</span>time</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span> <span class="z-keyword z-operator z-arithmetic z-rust">/</span> <span class="z-constant z-numeric z-float z-rust">120.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        position<span class="z-punctuation z-accessor z-dot z-rust">.</span>x <span class="z-keyword z-operator z-assignment z-rust">+=</span> diff <span class="z-keyword z-operator z-arithmetic z-rust">*</span> speed<span class="z-punctuation z-accessor z-dot z-rust">.</span>x<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        position<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-assignment z-rust">+=</span> diff <span class="z-keyword z-operator z-arithmetic z-rust">*</span> speed<span class="z-punctuation z-accessor z-dot z-rust">.</span>y<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-keyword z-control z-rust">if</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>random_factor <span class="z-keyword z-operator z-comparison z-rust">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">0</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            position<span class="z-punctuation z-accessor z-dot z-rust">.</span>x <span class="z-keyword z-operator z-assignment z-rust">+=</span> <span class="z-constant z-numeric z-float z-rust">2.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> diff <span class="z-keyword z-operator z-arithmetic z-rust">*</span> random<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">next_float</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-storage z-type z-rust">i32</span><span class="z-meta z-path z-rust"><span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-constant z-other z-rust">MAX</span> <span class="z-keyword z-operator z-arithmetic z-rust">%</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>random_factor</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            position<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-assignment z-rust">+=</span> <span class="z-constant z-numeric z-float z-rust">2.</span><span class="z-constant z-numeric z-float z-rust">0</span> <span class="z-keyword z-operator z-arithmetic z-rust">*</span> diff <span class="z-keyword z-operator z-arithmetic z-rust">*</span> random<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">next_float</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-storage z-type z-rust">i32</span><span class="z-meta z-path z-rust"><span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-constant z-other z-rust">MAX</span> <span class="z-keyword z-operator z-arithmetic z-rust">%</span> missile<span class="z-punctuation z-accessor z-dot z-rust">.</span>random_factor</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">as</span> <span class="z-storage z-type z-rust">f64</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        timestamp<span class="z-punctuation z-accessor z-dot z-rust">.</span>time <span class="z-keyword z-operator z-assignment z-rust">=</span> time<span class="z-punctuation z-accessor z-dot z-rust">.</span>now<span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">    </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<h2 id="resources">Resources</h2>
+<p>Resources in Bevy ECS are global values that can be read and mutated from systems.
+There's only one of each resource, and it's identified by its type. In
+Värnpliktsspelet the resources are <code>Time</code>, <code>Images</code>, <code>Sounds</code>, <code>GameState</code>,
+<code>Random</code>, and <code>DebugBoundingBoxes</code>.</p>
+<h2 id="events">Events</h2>
+<p>This is the full list of events used by Värnpliktsspelet:</p>
+<div class="aside">
+    <div class="aside-title"><p>Events</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-path z-rust">EventRegistry<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-path z-rust">register_event<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-generic z-rust"><span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>MousePositionEvent<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> world</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-meta z-path z-rust">EventRegistry<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-path z-rust">register_event<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-generic z-rust"><span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>MouseUpEvent<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> world</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-meta z-path z-rust">EventRegistry<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-path z-rust">register_event<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-generic z-rust"><span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>NextLevelEvent<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> world</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-meta z-path z-rust">EventRegistry<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-path z-rust">register_event<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-meta z-generic z-rust"><span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span>InitEvent<span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> world</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></code></pre>
+
+    
+</div>
+<p>Events are used as communication channels between systems or from the outside
+world into systems. Whenever the JavaScript side of the game registers <code>mouseup</code>
+or <code>touchup</code>, a <code>MouseUpEvent</code> is sent</p>
+<div class="aside">
+    <div class="aside-title"><p>Mouse / Touch up</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">mouse_up</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">self</span>, <span class="z-variable z-parameter z-rust">x</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-storage z-type z-rust">f64</span>, <span class="z-variable z-parameter z-rust">y</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-storage z-type z-rust">f64</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-variable z-language z-rust">self</span><span class="z-punctuation z-accessor z-dot z-rust">.</span>world<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">send_event</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>MouseUpEvent <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span> x<span class="z-punctuation z-separator z-rust">,</span> y </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+
+    
+</div>
+<h1 id="bevy-ecs-inconveniences">Bevy ECS Inconveniences</h1>
+<p>Remember when I said to <a href="#bevy-pin">put a pin in it</a>?</p>
+<p>This section will be grist to the mill for the people that love to dunk on the
+<em>if it compiles it works</em> mantra that Rust evangelists love to profess. If you
+want to keep dunking, there are plenty of places for that. I'm mostly siding
+with the Rust truthers, but like everything in software engineering</p>
+<div class="note">
+    <div class="note-title"></div>
+    <p>IT'S 👏 A 👏 TRADE-OFF</p>
+
+</div>
+<p>I have two gripes: crashing due to concurrent exclusive access<sup class="footnote-reference"><a href="#exclusive">12</a></sup>, and
+despawning the same entity multiple times.</p>
+<h2 id="concurrent-exclusive-access">Concurrent exclusive access</h2>
+<p>Rust promises safe and sound programs as long as we observe all the invariants
+of any <code>unsafe</code> code we call, and as long as we don't write any incorrect
+<code>unsafe</code> code. Most Rust programs call <code>unsafe</code> code through safe interfaces,
+but I rarely write any <code>unsafe</code> code myself. What Rust doesn't do is promise
+programs that don't leak memory, that don't have deadlocks, etc. etc. etc.</p>
+<p>One thing that I've gotten used to is that the type system <em>mostly has my back</em>.
+If I don't hold it right, I will get a compiler error. If I try to have
+exclusive access<sup class="footnote-reference"><a href="#exclusive">12</a></sup> of a piece of data in two different parts of my
+program at the same time, the Rust compiler will tell me that I did something
+I'm not allowed to do. As an example, if I tried to loop over the same mutable
+slice twice, Rust would be disappointed in me:</p>
+<div class="aside">
+    <div class="aside-title"><p>Not a proud parent</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">double_mutable_loop</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-variable z-parameter z-rust">positions</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> [Position]</span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span>  error[E0499]: cannot borrow `*positions` as mutable more than once at a time
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-keyword z-control z-rust">for</span> f_pos <span class="z-keyword z-operator z-rust">in</span> positions<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">iter_mut</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span>               --------------------
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span>               |
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span>               first mutable borrow occurs here
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span>               first borrow later used here
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-keyword z-control z-rust">for</span> e_pos <span class="z-keyword z-operator z-rust">in</span> positions<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">iter_mut</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span>                   ^^^^^^^^^ second mutable borrow occurs here
+</span></span></span></span></span></span></code></pre>
+
+    
+</div>
+<p>Bevy ECS <code>Query</code>—or any other memory management abstraction that bypasses the
+borrow checker, like <code>RefCell</code><sup class="footnote-reference"><a href="#refcell">13</a></sup>—lets you write code that breaks the
+rules but instead lead to runtime panics when used wrong. I'm writing code that
+looks like it should work, it looks like the compiler should yell at me because
+I'm looping mutably over the same slices of memory, but it can't tell me because
+it doesn't have that information.</p>
+<div class="aside">
+    <div class="aside-title"><p>OOPSIE WOOPSIE!! Uwu We made a fucky wucky!!</p>
+</div>
+    
+    
+    <pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-documentation z-rust"><span class="z-punctuation z-definition z-comment z-rust">///</span> This will trigger a runtime crash
+</span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">double_mutable_loop_system</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> The list of mutable positions here
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">query_friends</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Query<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span>Friend, <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Position<span class="z-punctuation z-section z-group z-end z-rust">)</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Can overlap wit the list of mutable positions here at runtime
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust">    <span class="z-storage z-modifier z-rust">mut</span> <span class="z-variable z-parameter z-rust">query_enemies</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-generic z-rust">Query<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span>Enemy, <span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> Position<span class="z-punctuation z-section z-group z-end z-rust">)</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span>,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-keyword z-control z-rust">for</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>_friend<span class="z-punctuation z-separator z-rust">,</span> <span class="z-storage z-modifier z-rust">mut</span> f_pos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-keyword z-operator z-rust">in</span> <span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> query_friends <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        <span class="z-keyword z-control z-rust">for</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span>_enemy<span class="z-punctuation z-separator z-rust">,</span> <span class="z-storage z-modifier z-rust">mut</span> e_pos</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>  <span class="z-keyword z-operator z-rust">in</span> <span class="z-keyword z-operator z-bitwise z-rust">&amp;</span><span class="z-storage z-modifier z-rust">mut</span> query_enemies <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            <span class="z-meta z-path z-rust">tracing<span class="z-punctuation z-accessor z-rust">::</span></span>info<span class="z-keyword z-operator z-logical z-rust">!</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>This code will never execute<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            f_pos<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-constant z-numeric z-float z-rust">100.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">            e_pos<span class="z-punctuation z-accessor z-dot z-rust">.</span>y <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-constant z-numeric z-float z-rust">100.</span><span class="z-constant z-numeric z-float z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">        </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-meta z-block z-rust">    </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+<p><a href="https://knowyourmeme.com/memes/oopsie-woopsie">Know Your Meme</a></p>
+
+    
+</div>
+<p>Which inevitably leads to a runtime crash</p>
+<div class="aside">
+    <div class="aside-title"><p>I am inevitable</p>
+</div>
+    
+    
+    <pre data-lang="text" class="language-text z-code"><code class="language-text" data-lang="text"><span class="z-text z-plain">panicked at ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/bevy_ecs-0.15.0-rc.2/src/system/system_param.rs:356:5:
+</span><span class="z-text z-plain">error[B0001]: Query&lt;(&amp;engine::objects::enemy::Enemy, &amp;mut engine::primitive::position::Position), ()&gt; in system engine::double_mutable_loop_system accesses component(s) engine::primitive::position::Position in a way that conflicts with a previous system parameter. Consider using `Without&lt;T&gt;` to create disjoint Queries or merging conflicting Queries into a `ParamSet`. See: https://bevyengine.org/learn/errors/b0001
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">Stack:
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">Error
+</span><span class="z-text z-plain">    at imports.wbg.__wbg_new_8a6f238a6ece86ea (http://localhost:8000/pkg/wasm.js:408:21)
+</span><span class="z-text z-plain">    at http://localhost:8000/pkg/wasm_bg.wasm:wasm-function[426]:0x49e5c
+</span><span class="z-text z-plain">    at http://localhost:8000/pkg/wasm_bg.wasm:wasm-function[1017]:0x56324
+</span><span class="z-text z-plain">    at http://localhost:8000/pkg/wasm_bg.wasm:wasm-function[167]:0x30cab
+</span><span class="z-text z-plain">    at http://localhost:8000/pkg/wasm_bg.wasm:wasm-function[127]:0x2a400
+</span><span class="z-text z-plain">    at http://localhost:8000/pkg/wasm_bg.wasm:wasm-function[62]:0x6367
+</span><span class="z-text z-plain">    at GameHandle.update (http://localhost:8000/pkg/wasm.js:261:14)
+</span><span class="z-text z-plain">    at renderLoop (http://localhost:8000/:175:12)
+</span><span class="z-text z-plain">    at startGame (http://localhost:8000/:179:5)
+</span><span class="z-text z-plain">    at async run (http://localhost:8000/:184:5)
+</span></code></pre>
+
+    
+</div>
+<p>The correct intuition to have is that Bevy ECS' <code>Query</code> is analogous to
+<code>RefCell</code><sup class="footnote-reference"><a href="#refcell">13</a></sup>. Avoid mutably / exclusively accessing the same component in
+the same system and everything will work out. Just Be Careful, is what I'm
+trying to say. At least we get a runtime panic instead of memory corruption,
+like it would in memory unsafe languages.</p>
+<div class="note">
+    <div class="note-title">UPDATE!! 2025-01-07</div>
+    <p><a href="https://tech.lgbt/@laund">@laund@tech.lgbt</a> replied
+to <a href="https://hachyderm.io/@laund@tech.lgbt/113787402663198634">my post on mastodon</a>
+to clarify that systems are checked on first execution of their schedule, so
+there doesn't need to be an actual memory violation for the panic to happen—Bevy
+ECS will let us know much earlier.</p>
+<p>I also visited <a href="https://bevyengine.org/learn/errors/b0001/">the link</a> in the
+error message, which goes to a page that teaches us that there are two ways to
+work around having exclusive access to the same component in two queries in a
+system:</p>
+<ul>
+<li>Using the <code>With&lt;ComponentType&gt;</code> filter on one query and
+<code>Without&lt;ComponentType&gt;</code> filter on the other</li>
+<li>Use a <code>ParamSet</code> which makes it possible to have at most eight queries with
+overlapping exclusive access</li>
+</ul>
+
+</div>
+<p>To me this is a minor inconvenience. If you're doing anything remotely serious
+you will have unit tests, system tests, or integration tests, as well as manual
+run-throughs of your code. If you don't have any of those:
+tough luck. I don't want to start a language war here, but if I was coming from
+literally any other programming language, this wouldn't be the hill I'd die on.</p>
+<h2 id="despawning-an-entity-multiple-times">Despawning an entity multiple times</h2>
+<p>In the end, I categorized the previous section as a "minor inconvenience",
+making this section a Microscopic Inconvenience at worst.</p>
+<p>It's not uncommon for entities in Värnpliktsspelet to be despawned more than once.
+Since systems run one after the other—I blame JavaScript—and Bevy ECS has a policy
+of not removing despawned entities until after a full world update, for good reasons,
+it's possible to have multiple despawns of the same entity. For example, a bomb
+could intersect with a missile in the same update as it intersects with a truck.</p>
+<p>Multiple despawns of the same entity don't lead to a runtime crash, it just
+prints an error message:</p>
+<div class="aside">
+    <div class="aside-title"><p>Multiple despawns</p>
+</div>
+    
+    
+    <pre class="z-code"><code><span class="z-text z-plain"> ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/bevy_ecs-0.15.0-rc.2/src/world/mod.rs:1532 error[B0003]: crates/engine/src/lib.rs:592:49: Could not despawn entity 25v32#137438953497 because it doesn&#39;t exist in this World. See: https://bevyengine.org/learn/errors/b0003
+</span></code></pre>
+
+    
+</div>
+<p>As far as I can tell, the policy is that this is something that each game should
+handle somehow. One piece of advice is
+to <a href="https://github.com/bevyengine/bevy/discussions/2658">handle despawning in its own system</a>
+by checking the hitpoints or some other piece of shared data. Another piece of
+advice from that same thread is to send a despawn event. I imagine it could be
+possible to add some sort of <code>IsDespawned</code> component too.</p>
+<h1 id="final-notes">Final notes</h1>
+<p>I think the ECS pattern is an excellent tool to have in your software
+development toolbox, and I think that it's especially useful when you're doing
+computer game style software. I'm looking at adopting this pattern at work for
+our cross-platform rendering stack. It's not a game engine, but it's also
+not-not a game engine.</p>
+<h1 id="references">References</h1>
+<div class="footnote-definition" id="stefan"><sup class="footnote-definition-label">1</sup>
+<p><a href="https://www.linkedin.com/in/stefanli/">https://www.linkedin.com/in/stefanli/</a></p>
+</div>
+<div class="footnote-definition" id="vplr"><sup class="footnote-definition-label">2</sup>
+<p><a href="https://sv.wikipedia.org/wiki/V%C3%A4rnpliktsr%C3%A5det">https://sv.wikipedia.org/wiki/V%C3%A4rnpliktsr%C3%A5det</a></p>
+</div>
+<div class="footnote-definition" id="ecs"><sup class="footnote-definition-label">3</sup>
+<p><a href="https://en.wikipedia.org/wiki/Entity_component_system">https://en.wikipedia.org/wiki/Entity_component_system</a></p>
+</div>
+<div class="footnote-definition" id="bevy"><sup class="footnote-definition-label">4</sup>
+<p><a href="https://bevyengine.org/">https://bevyengine.org/</a></p>
+</div>
+<div class="footnote-definition" id="bamse"><sup class="footnote-definition-label">5</sup>
+<p><a href="https://en.wikipedia.org/wiki/RBS_23">https://en.wikipedia.org/wiki/RBS_23</a></p>
+</div>
+<div class="footnote-definition" id="hercules"><sup class="footnote-definition-label">6</sup>
+<p><a href="https://en.wikipedia.org/wiki/Lockheed_C-130_Hercules">https://en.wikipedia.org/wiki/Lockheed_C-130_Hercules</a></p>
+</div>
+<div class="footnote-definition" id="raf"><sup class="footnote-definition-label">7</sup>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame">https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame</a></p>
+</div>
+<div class="footnote-definition" id="bindgen"><sup class="footnote-definition-label">8</sup>
+<p><a href="https://github.com/rustwasm/wasm-bindgen">https://github.com/rustwasm/wasm-bindgen</a></p>
+</div>
+<div class="footnote-definition" id="tokei"><sup class="footnote-definition-label">9</sup>
+<p><a href="https://github.com/XAMPPRocky/tokei">https://github.com/XAMPPRocky/tokei</a></p>
+</div>
+<div class="footnote-definition" id="monad"><sup class="footnote-definition-label">10</sup>
+<p><a href="https://stackoverflow.com/questions/3870088/a-monad-is-just-a-monoid-in-the-category-of-endofunctors-whats-the-problem">https://stackoverflow.com/questions/3870088/a-monad-is-just-a-monoid-in-the-category-of-endofunctors-whats-the-problem</a></p>
+</div>
+<div class="footnote-definition" id="bevy-ecs"><sup class="footnote-definition-label">11</sup>
+<p><a href="https://crates.io/crates/bevy-ecs">https://crates.io/crates/bevy-ecs</a></p>
+</div>
+<div class="footnote-definition" id="exclusive"><sup class="footnote-definition-label">12</sup>
+<p><a href="https://docs.rs/dtolnay/latest/dtolnay/macro._02__reference_types.html">https://docs.rs/dtolnay/latest/dtolnay/macro._02__reference_types.html</a></p>
+</div>
+<div class="footnote-definition" id="refcell"><sup class="footnote-definition-label">13</sup>
+<p><a href="https://doc.rust-lang.org/std/cell/index.html#refcellt">https://doc.rust-lang.org/std/cell/index.html#refcellt</a></p>
+</div>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

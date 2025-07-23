@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/question-mark-here/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Array indexing is a footgun and ? is here to help you —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Array indexing is a footgun and ? is here to help you —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Array indexing is a footgun and ? is here to help you —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark." />
+        <meta name="twitter:description" content="A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark.">
+        <meta property="og:description" content="A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Array indexing is a footgun and ? is here to help you
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">10 August 2022 · reading time 4 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/typescript/">typescript</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/programming/">programming</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/question-mark-here/#javascript-is-unusable">JavaScript is unusable</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/question-mark-here/#and-typescript-is-unsound">And TypeScript is unsound</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/question-mark-here/#and-typescript-doesn-t-seem-to-care-that-it-s-unsound">And TypeScript doesn&#x27;t seem to care that it&#x27;s unsound</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/question-mark-here/#sound-programming-languages-love-runtime-errors">Sound programming languages love runtime errors</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/question-mark-here/#back-to-the-initial-review">Back to the initial review</a>
+        </li>
+        
+    </ol>
+    
+
+<p>A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark.</p>
+<span id="continue-reading"></span><pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">useEffect</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-arrow z-ts"><span class="z-meta z-parameters z-ts"><span class="z-punctuation z-definition z-parameters z-begin z-ts">(</span><span class="z-punctuation z-definition z-parameters z-end z-ts">)</span></span> </span><span class="z-meta z-arrow z-ts"><span class="z-storage z-type z-function z-arrow z-ts">=&gt;</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts">    <span class="z-keyword z-control z-conditional z-ts">if</span> <span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">activeAccount</span><span class="z-punctuation z-accessor z-optional z-ts">?.</span><span class="z-support z-variable z-property z-dom z-ts">id</span><span class="z-meta z-brace z-round z-ts">)</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">        <span class="z-meta z-function-call z-ts"><span class="z-variable z-other z-object z-ts">cancelable</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-function z-ts">exec</span></span><span class="z-meta z-brace z-round z-ts">(</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>id<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-meta z-function-call z-ts"><span class="z-variable z-other z-object z-ts">networking</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-function z-ts">search</span></span><span class="z-meta z-brace z-round z-ts">(</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-variable z-other z-readwrite z-ts">param1</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-variable z-other z-readwrite z-ts">param2</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>param3<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-variable z-other z-readwrite z-ts">param4</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-variable z-other z-readwrite z-ts">param5</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>param6<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-variable z-other z-readwrite z-ts">param7</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-separator z-comma z-ts">,</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">        <span class="z-meta z-brace z-round z-ts">)</span><span class="z-meta z-function-call z-ts"><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-function z-promise z-ts">then</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-arrow z-ts"><span class="z-meta z-parameters z-ts"><span class="z-punctuation z-definition z-parameters z-begin z-ts">(</span><span class="z-variable z-parameter z-ts">result</span><span class="z-punctuation z-definition z-parameters z-end z-ts">)</span></span> </span><span class="z-meta z-arrow z-ts"><span class="z-storage z-type z-function z-arrow z-ts">=&gt;</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts">            <span class="z-keyword z-control z-conditional z-ts">if</span> <span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">result</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-dom z-ts">content</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-ts">length</span> <span class="z-keyword z-operator z-relational z-ts">&gt;</span> <span class="z-constant z-numeric z-decimal z-ts">0</span><span class="z-meta z-brace z-round z-ts">)</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">setShowCreateTopLevel</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-constant z-language z-boolean z-true z-ts">true</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts">            <span class="z-keyword z-control z-conditional z-ts">if</span> <span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">result</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-dom z-ts">content</span><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-constant z-numeric z-decimal z-ts">0</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">levelId</span><span class="z-meta z-brace z-round z-ts">)</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">                <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">setTopLevelId</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">result</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-dom z-ts">content</span><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-constant z-numeric z-decimal z-ts">0</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">levelId</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span></span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts">        <span class="z-punctuation z-definition z-block z-ts">}</span></span></span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">    <span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span></span></span><span class="z-source z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span></span><span class="z-punctuation z-separator z-comma z-ts">,</span><span class="z-meta z-array z-literal z-ts"> <span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></code></pre>
+<p>Imagine reviewing this code, a normal and good thing to do, and finding nothing
+wrong. Imagine this being one of a handful of changes in different files.
+My money is you don't find the bug.</p>
+<p>Personally, I think my brain would believe that the first bounds check
+<code>result.content.length &gt; 0</code> was a refinement, and that the code was working
+as it should. Workload goes up, review quality goes down.</p>
+<p>But this bug is completely unnecessary, especially in modern JavaScript,
+TypeScript and Rust. Unfortunately, the compilers for TypeScript and Rust
+won't help you find the bug. But I'll come back to the bug in a minute.</p>
+<p>I like Rust and I like TypeScript but in different ways and for different reasons.</p>
+<p>I like Rust because of <span class="system-font"><a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/" title="Parse Don&#39;t Validate">P̸̡̿a̸̮̋ṛ̷͝s̴̺̉͝e̸͕̖͆̕ ̴̪̐́Ḍ̶̹̒o̵̲̹͊̽n̷͕͂'̸̨̉t̸̖̚ ̵̕͜Ṿ̴̬͛a̴̤̍̕l̶͇͘i̴̻̐d̷̙̣̈a̶͕͛͛t̶̬̀͘ē̶̲̟</a></span>,
+<a href="https://en.wikipedia.org/wiki/Nominal_type_system">Nominal Types</a>,
+and great error handling.</p>
+<p>I like TypeScript because JavaScript is unusable and TypeScript is marginally less
+unusable.</p>
+<div class="aside">
+    <div class="aside-title"><p>But is it really unusable?</p>
+</div>
+    
+    
+    <p>Yes it is extremely unusable.</p>
+
+    
+</div>
+<h1 id="javascript-is-unusable">JavaScript is unusable</h1>
+<p>Unusable is a <i>strong word</i> — Like most other scripting languages,
+JavaScript has the following properties:</p>
+<ul>
+<li>Having more than 50 lines of code makes it effectively write-only.</li>
+<li>Every person added to a project introduces bugs at an increasingly exponential rate.</li>
+</ul>
+<p>TypeScript doesn't have those same properties. As long as you are diligent about
+your design, use types everywhere, and turn on all the <code>strict</code> checks the compiler has,
+you can keep adding people and have (slightly sub-)linear increases in productivity.</p>
+<p>But TypeScript has so many paper cuts. I'm figuratively bleeding.</p>
+<h1 id="and-typescript-is-unsound">And TypeScript is unsound</h1>
+<p>TypeScript is <a href="https://effectivetypescript.com/2021/05/06/unsoundness/">wildly unsound</a>,
+and it will let you do this:</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-comment z-line z-double-slash z-ts"><span class="z-punctuation z-definition z-comment z-ts">//</span></span><span class="z-comment z-line z-double-slash z-ts"> Function calls don&#39;t invalidate refinements</span>
+</span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-storage z-type z-class z-ts">class</span> <span class="z-entity z-name z-type z-class z-ts">UnsoundRefinement</span> <span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts">    <span class="z-storage z-modifier z-ts">private</span><span class="z-meta z-field z-declaration z-ts"> <span class="z-meta z-definition z-property z-ts"><span class="z-variable z-object z-property z-ts">mutable</span></span><span class="z-keyword z-operator z-optional z-ts">?</span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">string</span></span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts">
+</span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts">    <span class="z-meta z-definition z-method z-ts"><span class="z-entity z-name z-function z-ts">refineMe</span></span><span class="z-meta z-parameters z-ts"><span class="z-punctuation z-definition z-parameters z-begin z-ts">(</span><span class="z-punctuation z-definition z-parameters z-end z-ts">)</span></span><span class="z-meta z-return z-type z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">void</span> </span><span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts">        <span class="z-variable z-language z-this z-ts">this</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">mutable</span> <span class="z-keyword z-operator z-assignment z-ts">=</span> <span class="z-string z-quoted z-double z-ts"><span class="z-punctuation z-definition z-string z-begin z-ts">&quot;</span>Not undefined<span class="z-punctuation z-definition z-string z-end z-ts">&quot;</span></span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts">        <span class="z-keyword z-control z-conditional z-ts">if</span> <span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-language z-this z-ts">this</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">mutable</span> <span class="z-keyword z-operator z-comparison z-ts">!==</span> <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-meta z-brace z-round z-ts">)</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-meta z-function-call z-ts"><span class="z-variable z-language z-this z-ts">this</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-entity z-name z-function z-ts">clearMutable</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts"><span class="z-punctuation z-whitespace z-comment z-leading z-ts">            </span><span class="z-comment z-line z-double-slash z-ts"><span class="z-punctuation z-definition z-comment z-ts">//</span></span><span class="z-comment z-line z-double-slash z-ts"> This is a runtime Error</span>
+</span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">            <span class="z-meta z-function-call z-ts"><span class="z-support z-class z-console z-ts">console</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-function z-console z-ts">log</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-language z-this z-ts">this</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-object z-property z-ts">mutable</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-ts">length</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts"><span class="z-meta z-block z-ts">        <span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts">    <span class="z-punctuation z-definition z-block z-ts">}</span></span></span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts">
+</span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts">    <span class="z-meta z-definition z-method z-ts"><span class="z-entity z-name z-function z-ts">clearMutable</span></span><span class="z-meta z-parameters z-ts"><span class="z-punctuation z-definition z-parameters z-begin z-ts">(</span><span class="z-punctuation z-definition z-parameters z-end z-ts">)</span></span><span class="z-meta z-return z-type z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">void</span> </span><span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts">        <span class="z-variable z-language z-this z-ts">this</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">mutable</span> <span class="z-keyword z-operator z-assignment z-ts">=</span> <span class="z-constant z-language z-undefined z-ts">undefined</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-meta z-method z-declaration z-ts"><span class="z-meta z-block z-ts">    <span class="z-punctuation z-definition z-block z-ts">}</span></span></span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-class z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span></code></pre>
+<h1 id="and-typescript-doesn-t-seem-to-care-that-it-s-unsound">And TypeScript doesn't seem to care that it's unsound</h1>
+<p>Here's TypeScript just throwing its hands in the air:</p>
+<div class="aside">
+    <div class="aside-title"><p>strictFunctionTypes</p>
+</div>
+    
+    
+    <p>During development of this feature, we discovered a large number of inherently
+unsafe class hierarchies, including some in the DOM. Because of this, the
+setting only applies to functions written in function syntax, not to those in method syntax.</p>
+<p>— <a href="https://www.typescriptlang.org/tsconfig#strictFunctionTypes">The TypeScript Documentation</a></p>
+
+    
+</div>
+<p>The reason I know about this is because I managed to run into it
+<a href="https://stackoverflow.com/q/52641612/816017">very early</a> in my TypeScript "career".</p>
+<h1 id="sound-programming-languages-love-runtime-errors">Sound programming languages love runtime errors</h1>
+<p>I don't like runtime errors. I'll be clear and state that I'll take a runtime
+error (or panic) over unsoundness every day of the week, but I don't have to like it.</p>
+<p>C programmers claim that they can allocate and deallocate memory manually and
+that it's "fine, actually" (it's not). Rust and TypeScript programmers claim that
+they can decide when to check array lengths before accessing elements and that
+"it's fine actually" (it is fine actually) — BUT I DON'T LIKE IT.</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">feeling_lucky</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-variable z-parameter z-rust">slice</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-keyword z-operator z-rust">&amp;</span>[<span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-type z-rust">str</span>]</span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> <span class="z-meta z-function z-return-type z-rust"><span class="z-punctuation z-separator z-rust">-&gt;</span> <span class="z-storage z-type z-rust">usize</span></span> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Runtime panic if slice is shorter than 1000 elements.
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> The panic is on the index access, not the .len() call.
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    slice<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">[</span><span class="z-constant z-numeric z-integer z-decimal z-rust">999</span><span class="z-punctuation z-section z-group z-end z-rust">]</span></span><span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">len</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-storage z-type z-ts">const</span> <span class="z-meta z-var-single-variable z-expr z-ts"><span class="z-meta z-definition z-variable z-ts"><span class="z-variable z-other z-constant z-ts"><span class="z-entity z-name z-function z-ts">feelingLucky</span></span></span> </span><span class="z-keyword z-operator z-assignment z-ts">=</span><span class="z-meta z-arrow z-ts"> <span class="z-meta z-parameters z-ts"><span class="z-punctuation z-definition z-parameters z-begin z-ts">(</span><span class="z-variable z-parameter z-ts">arr</span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">string</span><span class="z-meta z-type z-tuple z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span></span><span class="z-punctuation z-definition z-parameters z-end z-ts">)</span></span><span class="z-meta z-return z-type z-arrow z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">number</span> </span></span><span class="z-meta z-arrow z-ts"><span class="z-storage z-type z-function z-arrow z-ts">=&gt;</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-punctuation z-whitespace z-comment z-leading z-ts">    </span><span class="z-comment z-line z-double-slash z-ts"><span class="z-punctuation z-definition z-comment z-ts">//</span></span><span class="z-comment z-line z-double-slash z-ts"> Throws a runtime error if slice is shorter than 1000 elements.</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-punctuation z-whitespace z-comment z-leading z-ts">    </span><span class="z-comment z-line z-double-slash z-ts"><span class="z-punctuation z-definition z-comment z-ts">//</span></span><span class="z-comment z-line z-double-slash z-ts"> The panic is on the .length access, since index-out-of bounds returns undefined.</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts">    <span class="z-keyword z-control z-flow z-ts">return</span> <span class="z-variable z-other z-readwrite z-ts">arr</span><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-constant z-numeric z-decimal z-ts">999</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-ts">length</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span></span></span>
+</span></code></pre>
+<p>There is no reason why the <code>?</code> operator can't just solve this. Both of them.
+The type signatures will be different, but that's ok with me.</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">am_lucky_actually</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-variable z-parameter z-rust">slice</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-keyword z-operator z-rust">&amp;</span>[<span class="z-keyword z-operator z-rust">&amp;</span><span class="z-storage z-type z-rust">str</span>]</span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> <span class="z-meta z-function z-return-type z-rust"><span class="z-punctuation z-separator z-rust">-&gt;</span> <span class="z-meta z-generic z-rust"><span class="z-support z-type z-rust">Option</span><span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-storage z-type z-rust">usize</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span></span> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> This isn&#39;t actually valid rust, can&#39;t use ? here:
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    slice<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">[</span><span class="z-constant z-numeric z-integer z-decimal z-rust">999</span><span class="z-punctuation z-section z-group z-end z-rust">]</span></span><span class="z-keyword z-operator z-rust">?</span><span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">map</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-function z-closure z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">|</span></span></span><span class="z-meta z-function z-closure z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-variable z-parameter z-rust">v</span><span class="z-punctuation z-section z-parameters z-end z-rust">|</span></span> </span><span class="z-meta z-function z-closure z-rust">v<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">len</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> This is what you would need to write today:
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> slice[999].get()?.map(|v| v.len())
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-storage z-type z-ts">const</span> <span class="z-meta z-var-single-variable z-expr z-ts"><span class="z-meta z-definition z-variable z-ts"><span class="z-variable z-other z-constant z-ts"><span class="z-entity z-name z-function z-ts">amLuckyActually</span></span></span> </span><span class="z-keyword z-operator z-assignment z-ts">=</span><span class="z-meta z-arrow z-ts"> <span class="z-meta z-parameters z-ts"><span class="z-punctuation z-definition z-parameters z-begin z-ts">(</span><span class="z-variable z-parameter z-ts">arr</span><span class="z-meta z-type z-annotation z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">number</span><span class="z-meta z-type z-tuple z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-meta z-brace z-square z-ts">]</span></span></span><span class="z-punctuation z-definition z-parameters z-end z-ts">)</span></span><span class="z-meta z-return z-type z-arrow z-ts"><span class="z-keyword z-operator z-type z-annotation z-ts">:</span> <span class="z-support z-type z-primitive z-ts">number</span> <span class="z-keyword z-operator z-type z-ts">|</span> <span class="z-support z-type z-builtin z-ts">undefined</span> </span></span><span class="z-meta z-arrow z-ts"><span class="z-storage z-type z-function z-arrow z-ts">=&gt;</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts">    <span class="z-keyword z-control z-flow z-ts">return</span> <span class="z-variable z-other z-readwrite z-ts">arr</span><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-constant z-numeric z-decimal z-ts">999</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-punctuation z-accessor z-optional z-ts">?.</span><span class="z-support z-variable z-property z-ts">length</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span></span></span><span class="z-source z-ts"><span class="z-meta z-var z-expr z-ts"><span class="z-meta z-arrow z-ts"><span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">}</span></span></span></span>
+</span></code></pre>
+<p>I personally think array indexing shouldn't lead to runtime crashes except
+when doing <code>.unwrap()</code>, <code>!</code>. In Rust it could be argued that you could skip
+the checking step in <code>unsafe</code> code, but <code>get_unchecked</code> already exists so
+<i>big shrug</i>, I guess.</p>
+<p>Since TypeScript already has (broken) refinement, it could just allow infallible
+array indexing when it can prove that the access will be in bounds. Maybe Rust
+can get that too, some day. Refinement is really neat, and I wish it wasn't
+broken in TypeScript.</p>
+<h1 id="back-to-the-initial-review">Back to the initial review</h1>
+<p>Load bearing code —</p>
+<pre data-lang="typescript" class="language-typescript z-code"><code class="language-typescript" data-lang="typescript"><span class="z-source z-ts">            <span class="z-keyword z-control z-conditional z-ts">if</span> <span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">result</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-dom z-ts">content</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-ts">length</span> <span class="z-keyword z-operator z-relational z-ts">&gt;</span> <span class="z-constant z-numeric z-decimal z-ts">0</span><span class="z-meta z-brace z-round z-ts">)</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-block z-ts">                <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">setShowCreateTopLevel</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-constant z-language z-boolean z-true z-ts">true</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-block z-ts">            <span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span><span class="z-source z-ts">            <span class="z-keyword z-control z-conditional z-ts">if</span> <span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">result</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-dom z-ts">content</span><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-constant z-numeric z-decimal z-ts">0</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">levelId</span><span class="z-meta z-brace z-round z-ts">)</span> <span class="z-meta z-block z-ts"><span class="z-punctuation z-definition z-block z-ts">{</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-block z-ts">                <span class="z-meta z-function-call z-ts"><span class="z-entity z-name z-function z-ts">setTopLevelId</span></span><span class="z-meta z-brace z-round z-ts">(</span><span class="z-variable z-other z-object z-ts">result</span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-support z-variable z-property z-dom z-ts">content</span><span class="z-meta z-array z-literal z-ts"><span class="z-meta z-brace z-square z-ts">[</span><span class="z-constant z-numeric z-decimal z-ts">0</span><span class="z-meta z-brace z-square z-ts">]</span></span><span class="z-punctuation z-accessor z-ts">.</span><span class="z-variable z-other z-property z-ts">levelId</span><span class="z-meta z-brace z-round z-ts">)</span><span class="z-punctuation z-terminator z-statement z-ts">;</span>
+</span></span><span class="z-source z-ts"><span class="z-meta z-block z-ts">            <span class="z-punctuation z-definition z-block z-ts">}</span></span>
+</span></code></pre>
+<p>The length check doesn't wrap the array indexing call.</p>
+<p>I easily miss details like this, and I would expect the compiler to have my back.
+It does, in a sense, have my back (it crashes), but I resent that I have to find
+this error in <a href="https://sentry.io">Sentry</a>. 2500 crashes in one week, just as
+everyone is enjoying their vacation.</p>
+<p>It's not a big deal. It really isn't. But if I could choose, I think I'd like
+to have a compiler that didn't let me crash unexpectedly.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

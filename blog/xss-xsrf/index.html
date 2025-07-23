@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/xss-xsrf/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>TL;DR-time: XSS &amp; XSRF (web attack vectors) —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="TL;DR-time: XSS &amp; XSRF (web attack vectors) —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="TL;DR-time: XSS &amp; XSRF (web attack vectors) —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I'm going to explain Cross-site scripting (XSS) &amp; Cross-site request forgery
+(XSRF/CSRF) to myself." />
+        <meta name="twitter:description" content="I'm going to explain Cross-site scripting (XSS) &amp; Cross-site request forgery
+(XSRF/CSRF) to myself.">
+        <meta property="og:description" content="I'm going to explain Cross-site scripting (XSS) &amp; Cross-site request forgery
+(XSRF/CSRF) to myself." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        TL;DR-time: XSS &amp; XSRF (web attack vectors)
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">12 June 2016 · reading time 6 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/security/">security</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/css/">css</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/xsrf/">xsrf</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/xss-xsrf/#prerequisites">Prerequisites</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/xss-xsrf/#xss-in-depth-ish">XSS in-depth-ish</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/xss-xsrf/#xsrf-in-depth-ish">XSRF in-depth-ish</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/xss-xsrf/#cross-origin-resource-sharing-cors">Cross-origin resource sharing (CORS)</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/xss-xsrf/#somewhat-related-reading">Somewhat related reading</a>
+        </li>
+        
+    </ol>
+    
+
+<p>I'm going to explain Cross-site scripting (XSS) &amp; Cross-site request forgery
+(XSRF/CSRF) to myself.</p>
+<span id="continue-reading"></span><h1 id="prerequisites">Prerequisites</h1>
+<p>Super long names like "Cross-site request forgery" and their scary acronyms don't
+exactly lend themselves to instant revelations about how they work.
+Not like S.C.U.B.A., anyway.</p>
+<p>Therefore we must know some things™. Welcome to the TL;DR section.</p>
+<p><a href="https://en.wikipedia.org/wiki/Adversary_%28cryptography%29">Mallory</a> has her work cut out for her!</p>
+<h3 id="xss">XSS</h3>
+<p>Basically, if your web page displays input from users, and that input is
+not scrubbed by you, that input could be <em>weaponized</em> — e.g. if it loads (or is)
+a script (yes, that was an em dash).</p>
+<p><em>XSS generally applies when the user is interacting with your page directly</em>.</p>
+<h3 id="xsrf">XSRF</h3>
+<p>Any page that you visit can load content from your web page via GET (and
+possibly other means if <a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing">CORS</a>
+is disabled, or when using XSS + <a href="https://en.wikipedia.org/wiki/XMLHttpRequest">XHR</a>).
+All of this is perfectly valid, because many pages <em>want</em> to provide resources
+like images.</p>
+<p>Loading an image can be done with an &lt;img&gt; tag. That &lt;img&gt; tag may point to ANY
+url on your site, and if your site uses cookies
+<a href="http://stackoverflow.com/questions/3732087/is-csrf-possible-without-cookies">(or possibly other means of auth*)</a>,
+and you are still logged in, Mallory might start wreaking havoc.</p>
+<p><em>XSRF generally applies when the user is not interacting with your page directly</em>.</p>
+<h3 id="combination-of-xss-xsrf">Combination of XSS &amp; XSRF</h3>
+<p>Obviously, if the attackers can combine these methods, they might be more successful
+than when employing just one.</p>
+<h1 id="xss-in-depth-ish">XSS in-depth-ish</h1>
+<p>Some examples will be given, followed by a section on protection. No guarantees
+can be given as it pertains to their efficacy.</p>
+<h2 id="xss-as-a-script-in-query-parameters">XSS as a script in query parameters</h2>
+<p>This vector is generally called "non-persistent".</p>
+<p>If the script is allowed to be included in a user-facing HTML the attacker can
+perform any action that the user is allowed to perform. An example of this is
+a query parameter <code>name=your%20name</code> that your page reads and displays as the
+title of some page. Now the attacker crafts some url
+<code>http://your-domain.com/page?name=&lt;script&gt;alert('xss')&lt;/script&gt;</code>, and voila you
+dad just got rekt. (<a href="https://en.wikipedia.org/wiki/Cross-site_scripting#Exploit_examples">The url can be further masked using character percent escaping</a>).</p>
+<h2 id="xss-as-a-script-in-a-forum-post">XSS as a script in a forum post</h2>
+<p>This vector is generally called "persistent".</p>
+<p>If you allow user input in a forum post, user support request ticket, etc. you
+may be subject to XSS attacks. The attack happens when Mallory is allowed to post
+user-facing HTML that is not sanitized using HTML escaping. Same scenario as in the
+non-persistent case — Your dad is going to get rekt; only this time he gets rekt
+every time he refreshes that forum post on gastrointestinal health.</p>
+<h2 id="protections">Protections</h2>
+<p>Always sanitize external input. Always validate external input. Disable scripts
+in your browser (you're not going to do that though, are you, tough guy?).
+<a href="https://en.wikipedia.org/wiki/Cross-site_scripting#Emerging_defensive_technologies">There's some stuff coming in future browsers too</a>.</p>
+<h1 id="xsrf-in-depth-ish">XSRF in-depth-ish</h1>
+<p><a href="http://www.gnucitizen.org/blog/csrf-demystified/">This guy</a> made me read a lot
+of text, and I'm not going to put you through that.</p>
+<p>We love to love cookies, and Mallory <em>knows it</em>. That &lt;img&gt; tag we talked about
+earlier, it might look like this:
+<code>&lt;img src="http://your-domain.com/me/settings?delete_account=true"/&gt;</code>. (You're
+probably not going to have an API like that but
+<a href="https://www.google.se/search?q=bear">bear</a> with me). That resource is going to
+be loaded using a GET request, and the browser is going to send your cookies right
+along with it. <em>That's right</em>, your dad just keeps getting rekt.</p>
+<h2 id="protection">Protection</h2>
+<p><a href="http://security.stackexchange.com/questions/76544/modern-browsers-safe-to-ignore-csrf">This guy</a>
+has a novel approach to web browser security as it pertains to XSRF attacks:
+load every page that requires credentials separately and make sure no other web
+pages are loaded. Sign out a soon as you are finished. Oh, and restart your browser
+after signing out, who knows what might be cached? No one is going to do
+that though.</p>
+<p>We're going to help your dad out, because he's a nice guy.</p>
+<p>If you're not into TL;DR, there's this: <a href="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet">OWASP Cross-Site Request Forgery (CSRF) Prevention Cheat Sheet</a></p>
+<p><strong>Don't expose resource changing actions as GETs</strong></p>
+<ul>
+<li>Not going to help against XSS + XHR + XSRF.</li>
+</ul>
+<p><strong>Check the header for origin / referer</strong></p>
+<ul>
+<li>Can be circumvented - historically by <a href="https://www.google.se/search?q=flash+sc2">flash</a>, more recently by browser plugins. Also, some web proxies will strip these headers for different reasons.</li>
+</ul>
+<p><strong>XSRF tokens</strong></p>
+<p><a href="http://stackoverflow.com/questions/5207160/what-is-a-csrf-token-what-is-its-importance-and-how-does-it-work#comment62477933_33829607">Or as this guy points out, anti-XSRF tokens</a>,
+are a way to validate all requests by generating unique ids and appending
+them using e.g. hidden input fields in forms, or required request parameters.
+Optimally the id is generated per request, but for practical reasons (web apps)
+they can be per session, or alternatively cookies with a predefined, short, lifespan.</p>
+<p>An example:</p>
+<ul>
+<li>The server generates a hard to guess id, and saves it as a cookie on the client.</li>
+<li>The client reads the cookie (the cookie needs to have httpOnly=false) and attaches it to the request (hidden input, header, queryparam).</li>
+<li>The server has access to both the cookie and the attached parameter and only approves requests that have both.</li>
+<li>A pure XSRF attack is thwarted because it can't read cookies that are from another domain, and you should have made sure guessing your generated id is hard.</li>
+</ul>
+<p>This attack is still subject to XSS + XSRF because the XSS would be able to read your cookie. Dad's getting rekt again.</p>
+<h1 id="cross-origin-resource-sharing-cors">Cross-origin resource sharing (CORS)</h1>
+<p>Since I mentioned CORS a few times, here's the lowdown:</p>
+<p>CORS is used when a site is including e.g. images from a domain outside the
+domain from which the request originated. This is useful. Some servers might
+set <code>Access-Control-Allow-Origin: *</code>, e.g. the server serving google's fonts:
+<code>&lt;link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'&gt;</code>.</p>
+<h1 id="somewhat-related-reading">Somewhat related reading</h1>
+<p>Some stuff I stumbled across in this recent quest for knowledge:</p>
+<ul>
+<li><a href="https://auth0.com/blog/2016/05/31/cookies-vs-tokens-definitive-guide">Auth0 - Cookies vs Tokens: The Definitive Guide</a></li>
+<li><a href="https://stormpath.com/blog/where-to-store-your-jwts-cookies-vs-html5-web-storage">Stormpath - Where to Store your JWTs – Cookies vs HTML5 Web Storage</a></li>
+</ul>
+<p>Furthermore, you should see what some people that are probably smarter, more structured,
+and likely prettier than me had to say:</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Cross-site_scripting">Wikipedia: Cross-site scripting</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Cross-site_request_forgery">Wikipedia: Cross-site request forgery</a> (According to this article CSRF is "sometimes pronounced sea-surf" - <a href="https://www.google.se/search?q=wat">wat</a>)</li>
+</ul>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

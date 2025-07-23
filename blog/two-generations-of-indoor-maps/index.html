@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/two-generations-of-indoor-maps/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>How two generations of internal indoor map apps created a new line of business at Sony —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="How two generations of internal indoor map apps created a new line of business at Sony —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="How two generations of internal indoor map apps created a new line of business at Sony —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="In 2009, I was assigned to one of the Android teams at Sony Ericsson. To get
+up to speed I experimented with the different Android APIs. At this time I had
+been working at Sony Ericsson for 3 years already, and the massive footprint of the
+company in Lund required office landscapes the size of small towns. But also
+meeting rooms. Lots of meeting rooms." />
+        <meta name="twitter:description" content="In 2009, I was assigned to one of the Android teams at Sony Ericsson. To get
+up to speed I experimented with the different Android APIs. At this time I had
+been working at Sony Ericsson for 3 years already, and the massive footprint of the
+company in Lund required office landscapes the size of small towns. But also
+meeting rooms. Lots of meeting rooms.">
+        <meta property="og:description" content="In 2009, I was assigned to one of the Android teams at Sony Ericsson. To get
+up to speed I experimented with the different Android APIs. At this time I had
+been working at Sony Ericsson for 3 years already, and the massive footprint of the
+company in Lund required office landscapes the size of small towns. But also
+meeting rooms. Lots of meeting rooms." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        How two generations of internal indoor map apps created a new line of business at Sony
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">18 July 2025 · reading time 8 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/history/">history</a></li>
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/sony-ericsson/">sony ericsson</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/xperia/">xperia</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/android/">android</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/maps/">maps</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#smartphone-and-application-maturity-in-2009">Smartphone and application maturity in 2009</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#semcmap">SEMCMap</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#semcmap-and-indoor-finder-coexist-for-a-while">SEMCMap and Indoor Finder coexist for a while</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#sonymap">SonyMap</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#research-and-incubation">Research and Incubation</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#nimway">Nimway</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/two-generations-of-indoor-maps/#references">References</a>
+        </li>
+        
+    </ol>
+    
+
+<p>In 2009, I was assigned to one of the Android teams at Sony Ericsson. To get
+up to speed I experimented with the different Android APIs. At this time I had
+been working at Sony Ericsson for 3 years already, and the massive footprint of the
+company in Lund required office landscapes the size of small towns. But also
+meeting rooms. Lots of meeting rooms.</p>
+<span id="continue-reading"></span>
+<p>This is the story of how SEMCMap (SEMC being short for Sony Ericsson Mobile
+Communications) was created, how SonyMap spawned from a completely different
+project, how they were merged, how we managed to be the first project to be
+accepted by the brand-new Research and Incubation initiative at Sony Mobile, how
+it was the first project to "exit" Research and Incubation a few months before I
+left Sony Mobile for Spiideo, and finally how it became a completely new line of
+business<sup class="footnote-reference"><a href="#nimway">1</a></sup> for Sony Europe.</p>
+<div class="note">
+    <div class="note-title"></div>
+    <p>I need to give Magnus Persson a big Thank You for helping me
+remember details that would have otherwise been lost to time. You were
+invaluable. Thank You!</p>
+
+</div>
+<h1 id="smartphone-and-application-maturity-in-2009">Smartphone and application maturity in 2009</h1>
+<p>In 2009, there were very few smartphones: The iPhone 3Gs had just been released,
+and Sony Ericsson was about to release the Xperia X10<sup class="footnote-reference"><a href="#xperia_x10">2</a></sup>. There
+weren't many apps, and there definitely weren't any popular indoor-navigation
+apps.</p>
+<p>Smartphone screens were tiny compared to the screens we have today, and the
+phones weren't exactly snappy, even if it maybe felt like they were then and
+there. The Xperia X10<sup class="footnote-reference"><a href="#xperia_x10">2</a></sup> had a 4-inch screen and the iPhone 3Gs had a
+3.5-inch screen. Today it's hard to find a smartphone with a screen that's
+smaller than 6 inches. Apps weren't very pretty, especially on Android, which
+honestly had a lot of catching up to do at the time.</p>
+<h1 id="semcmap">SEMCMap</h1>
+<p>The first indoor map application I worked on was SEMCMap. I created it while
+I was looking into the Android APIs. My first attempts were terrible:
+performance-wise, design-wise, you name it. No compass, no auto-rotate,
+and no indoor positioning.</p>
+<p>It was rough being a user of SEMCMap, but it quickly gained in popularity,
+since it filled a niche that people needed help with — finding their way
+to the meeting room they were supposed to be in. If you've ever worked at a
+large company, or in a building with a lot of meeting rooms, you probably have
+some sense of how disorienting it can be when every floor looks the same and
+there are hundreds of meeting rooms.</p>
+<p>The main use-case was basically just typing a meeting room name into the search
+box, selecting the meeting room and then trying to decipher where you were going
+based on where you thought you were and where the map told you the meeting room
+was.</p>
+<div class="aside">
+    <div class="aside-title"><p>A lot of people were using SEMCMap at the time</p>
+</div>
+    
+    <a class="image" href=".&#x2F;usage.png">
+        <img src=".&#x2F;usage.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+</div>
+<p>SEMCMap had one redeeming feature though — the ability to send your
+position to someone else through the app. You could use your Google account to
+quickly sign in, and then use those credentials to send a message to another
+signed-in user along with the location. The feature was popular and well-used.</p>
+<p>So far so good. I maintained the application myself for a few years, and a lot
+of people seemed to like it! Mostly I did other work: phone book, social media
+integrations, and so on. I worked through a lot of tasks and a lot of teams.</p>
+<h1 id="semcmap-and-indoor-finder-coexist-for-a-while">SEMCMap and Indoor Finder coexist for a while</h1>
+<p>Magnus Persson<sup class="footnote-reference"><a href="#magnus_persson">3</a></sup> and I know each other from my early days at Sony
+Ericsson. He was working in some of the same teams that I did. A cool cat, and
+full of energy and great ideas. I think I met him the first time in 2006, I was
+24 at the time feels like yesterday but almost 20 years have passed. Life comes
+at you fast.</p>
+<p>While I had been working on SEMCMap on-and-off for a couple of years, Magnus was
+working in the Technology department. The Technology department was tasked with
+keeping track of new technologies and making sure those ended up in Sony
+Mobile's devices.</p>
+<p>Around 2011, Magnus ran a project called Indoor Finder together with Ericsson
+Research, with Sony Mobile mainly contributing to the map interface and the
+positioning functionality. At the time, he wrote a blog post, which can still
+be found using The Internet Archive's wayback machine! I did a little archiving
+myself — have a look at the <a href="https://zkc.se/blog/two-generations-of-indoor-maps/./indoor_maps.pdf">PDF</a>.</p>
+<div class="aside">
+    <div class="aside-title"><p>Left is SEMCMap, right is Indoor Finder</p>
+</div>
+    
+    <a class="image" href=".&#x2F;indoor_maps.jpg">
+        <img src=".&#x2F;indoor_maps.jpg" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+</div>
+<p>At the end of 2011 Sony Ericsson was being transformed into Sony Mobile, after
+Sony bought out Ericsson to gain full ownership and control of the company.</p>
+<h1 id="sonymap">SonyMap</h1>
+<p>Ericsson Research lost interest in the joint research project Indoor Finder at
+some point, and Sony Mobile fully took over the project. Magnus and I both had a
+lot of ideas and Magnus talked me into joining him to work full-time on SonyMap.
+Roger Jansson<sup class="footnote-reference"><a href="#roger_jansson">4</a></sup>, was my manager's manager at the time, and he was
+happy to give the permission to go ahead, and we went ahead... full steam.</p>
+<p>We both agreed that Indoor Finder was a better starting point than SEMCMap, but
+a lot of the code and ideas from the internals of SEMCMap made it over to the
+new SonyMap application. We brought on more people, and we were usually at least
+two, but usually three, or even four people working on it at this time. One of
+the good people got help from was Oskar Syrén<sup class="footnote-reference"><a href="#oskar_syren">5</a></sup> who implemented an
+improved fused indoor positioning engine that used a combination of GPS,
+Bluetooth Low Energy beacons, and Dead Reckoning.</p>
+<div class="aside">
+    <div class="aside-title"><p>Bluetooth Low-Energy Beacon</p>
+</div>
+    
+    <a class="image" href=".&#x2F;beacon.png">
+        <img src=".&#x2F;beacon.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+</div>
+<p>Magnus dutifully ordered parts and assembled Franken-BTLE beacons and placed
+them in <em>every single meeting room</em> — and there were a lot! Every BTLE
+beacon was attached to a standard Sony Mobile USB charger. You would think
+people would just leave them alone, but you'd be wrong.</p>
+<h1 id="research-and-incubation">Research and Incubation</h1>
+<p>Around 2014 things were not going great for Sony Mobile. Actually, things had
+not been going great for a while. Samsung and Apple are currently the biggest
+smartphone manufacturers, and that was true in 2014 too. There was more
+competition for sure: LG, Motorola, even Nokia, but they were all small too.</p>
+<p>Patrik Olsson<sup class="footnote-reference"><a href="#patrik_olsson">6</a></sup> kicked off the Research and Incubation (R&amp;I)
+department. Anyone that had an idea could apply, and SonyMap was the first
+project to get accepted. Magnus and I were very happy about that, since it
+showed that we had worked on something that was useful to people.</p>
+<p>Getting accepted to R&amp;I was great for us, but it also serves as an example of
+what happens when a project gets the spotlight on it in an organization starved
+for success. All of a sudden I wasn't spending my days planning concrete things
+to do with our application, or building cool features, I was in meetings with
+people wanting a piece of the cake.</p>
+<p>On the other hand, we now got to staff our development team with amazing
+engineers and designers. It was a fun time, and the team built a lot of
+interesting stuff, most of which was actually usable and shippable. One of the
+engineers that joined at this time was Mattias Niklewski, who I consider to be a
+good friend, and one of the finest engineers I have worked with.</p>
+<p>We weren't just the first project to get accepted to the R&amp;I process. The goal
+for an R&amp;I project was to "graduate" a real product, and we did that too, as
+the first graduate project from R&amp;I no less.</p>
+<h1 id="nimway">Nimway</h1>
+<p>But, I had done my time at Sony Mobile. I was ready for a new adventure. So
+after a little courting I accepted an offer to join Spiideo. Magnus tried to
+get me to stay on, but my mind was set on moving on.</p>
+<p>Magnus stayed for another 8 years. Mattias, and Oskar are still there, and the
+team did a great job acquiring clients under the Nimway<sup class="footnote-reference"><a href="#nimway">1</a></sup> moniker. A few
+years after I left, the project moved on from Sony Mobile and joined Sony
+Europe, and is still going strong from what I can gather!</p>
+<p>It's satisfying to see how something with small beginnings was able to evolve
+and amalgamate, finally becoming a whole new business segment for a huge company
+like Sony. I'm proud to be one of the parents of SonyMap, now part of Nimway,
+and I'm glad to see that what started as our side project continues to employ
+people.</p>
+<h1 id="references">References</h1>
+<div class="footnote-definition" id="nimway"><sup class="footnote-definition-label">1</sup>
+<p><a href="https://www.sonynetworkcom.com/nimway">https://www.sonynetworkcom.com/nimway</a></p>
+</div>
+<div class="footnote-definition" id="xperia_x10"><sup class="footnote-definition-label">2</sup>
+<p><a href="https://en.wikipedia.org/wiki/Sony_Ericsson_Xperia_X10">https://en.wikipedia.org/wiki/Sony_Ericsson_Xperia_X10</a></p>
+</div>
+<div class="footnote-definition" id="magnus_persson"><sup class="footnote-definition-label">3</sup>
+<p><a href="https://www.linkedin.com/in/magnuspersson78/">https://www.linkedin.com/in/magnuspersson78/</a></p>
+</div>
+<div class="footnote-definition" id="roger_jansson"><sup class="footnote-definition-label">4</sup>
+<p><a href="https://www.linkedin.com/in/brjansson/">https://www.linkedin.com/in/brjansson/</a></p>
+</div>
+<div class="footnote-definition" id="oskar_syren"><sup class="footnote-definition-label">5</sup>
+<p><a href="https://www.linkedin.com/in/oskar-syr%C3%A9n-79023857/">https://www.linkedin.com/in/oskar-syr%C3%A9n-79023857/</a></p>
+</div>
+<div class="footnote-definition" id="patrik_olsson"><sup class="footnote-definition-label">6</sup>
+<p><a href="https://www.linkedin.com/in/polsson/">https://www.linkedin.com/in/polsson/</a></p>
+</div>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

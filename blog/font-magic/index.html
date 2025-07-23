@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/font-magic/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Font magic: Reducing the size of the web fonts I use —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Font magic: Reducing the size of the web fonts I use —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Font magic: Reducing the size of the web fonts I use —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains a lot of glyphs that I don't need for this site. EB Garamond is going on a diet." />
+        <meta name="twitter:description" content="I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains a lot of glyphs that I don't need for this site. EB Garamond is going on a diet.">
+        <meta property="og:description" content="I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains a lot of glyphs that I don't need for this site. EB Garamond is going on a diet." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Font magic: Reducing the size of the web fonts I use
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">14 January 2024 · reading time 3 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/fonts/">fonts</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/web/">web</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/font-magic/#setting-up-a-web-font">Setting up a web font</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/font-magic/#emoji-troubles">Emoji troubles</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/font-magic/#setting-up-a-venv-for-fonttools">Setting up a venv for fonttools</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/font-magic/#reducing-the-number-of-glyphs">Reducing the number of glyphs</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/font-magic/#results">Results</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/font-magic/#final-notes">Final notes</a>
+        </li>
+        
+    </ol>
+    
+
+<p>I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains <em>a lot</em> of glyphs that I don't need for this site. EB Garamond is going on a diet.</p>
+<span id="continue-reading"></span>
+<p>This was partially inspired by Cliffle's <a href="https://cliffle.com/blog/making-website-faster">Making my website faster</a> post,
+specifically the <em>Reducing the cost of webfonts</em> section. I say partially because when I first started using EB Garamond
+and Josefin Sans, I thought they were both way too big. I searched for some options on how to shrink them, but at the
+time I wasn't feeling inspired to use Python (Python is a bit... much, at times).</p>
+<h1 id="setting-up-a-web-font">Setting up a web font</h1>
+<p>It's quite easy to set up web fonts, just download the ones you want, and then add them to your CSS file:</p>
+<pre data-lang="css" class="language-css z-code"><code class="language-css" data-lang="css"><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-keyword z-control z-at-rule z-font-face z-css"><span class="z-punctuation z-definition z-keyword z-css">@</span>font-face</span> <span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>EBGaramond<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-style</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-constant z-property-value z-css">normal</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-weight</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-constant z-numeric z-integer z-decimal z-css">400</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">src</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-meta z-function-call z-css"><span class="z-support z-function z-url z-css">url</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-double z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&quot;</span>/fonts/EBGaramond.ttf<span class="z-punctuation z-definition z-string z-end z-css">&quot;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span> <span class="z-meta z-function-call z-css"><span class="z-support z-function z-font-face z-css">format</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>truetype<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">unicode-range</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-unicode-range z-css"><span class="z-support z-constant z-unicode-range z-prefix z-css">U+</span><span class="z-constant z-codepoint-range z-css">0000<span class="z-punctuation z-section z-range z-css">-</span>017F</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span></span>
+</span><span class="z-source z-css">
+</span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-keyword z-control z-at-rule z-font-face z-css"><span class="z-punctuation z-definition z-keyword z-css">@</span>font-face</span> <span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>JosefinSans<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-style</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-constant z-property-value z-css">normal</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-weight</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-constant z-numeric z-integer z-decimal z-css">600</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">src</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-meta z-function-call z-css"><span class="z-support z-function z-url z-css">url</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-double z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&quot;</span>/fonts/JosefinSans.ttf<span class="z-punctuation z-definition z-string z-end z-css">&quot;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span> <span class="z-meta z-function-call z-css"><span class="z-support z-function z-font-face z-css">format</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>truetype<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">unicode-range</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-unicode-range z-css"><span class="z-support z-constant z-unicode-range z-prefix z-css">U+</span><span class="z-constant z-codepoint-range z-css">0000<span class="z-punctuation z-section z-range z-css">-</span>017F</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span></span>
+</span><span class="z-source z-css">
+</span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-keyword z-control z-at-rule z-font-face z-css"><span class="z-punctuation z-definition z-keyword z-css">@</span>font-face</span> <span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>Source Code Pro<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-style</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-constant z-property-value z-css">normal</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-weight</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-constant z-property-value z-css">auto</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">src</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-meta z-function-call z-css"><span class="z-support z-function z-url z-css">url</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-double z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&quot;</span>/fonts/SourceCodePro.ttf<span class="z-punctuation z-definition z-string z-end z-css">&quot;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span> <span class="z-meta z-function-call z-css"><span class="z-support z-function z-font-face z-css">format</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>truetype<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">unicode-range</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-unicode-range z-css"><span class="z-support z-constant z-unicode-range z-prefix z-css">U+</span><span class="z-constant z-codepoint-range z-css">0000<span class="z-punctuation z-section z-range z-css">-</span>017F</span></span>, <span class="z-support z-unicode-range z-css"><span class="z-support z-constant z-unicode-range z-prefix z-css">U+</span><span class="z-constant z-codepoint-range z-css">2500<span class="z-punctuation z-section z-range z-css">-</span>25FF</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span></span>
+</span><span class="z-source z-css">
+</span><span class="z-source z-css"><span class="z-meta z-selector z-css"><span class="z-entity z-name z-tag z-css">html</span> </span><span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-double z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&quot;</span>EBGaramond<span class="z-punctuation z-definition z-string z-end z-css">&quot;</span></span><span class="z-punctuation z-separator z-sequence z-css">,</span> <span class="z-support z-constant z-font-name z-css">serif</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span>
+</span><span class="z-source z-css">
+</span><span class="z-source z-css"><span class="z-meta z-selector z-css"><span class="z-entity z-other z-attribute-name z-class z-css"><span class="z-punctuation z-definition z-entity z-css">.</span>top-title</span> </span><span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-double z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&quot;</span>JosefinSans<span class="z-punctuation z-definition z-string z-end z-css">&quot;</span></span><span class="z-punctuation z-separator z-sequence z-css">,</span> <span class="z-support z-constant z-font-name z-css">sans-serif</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span>
+</span><span class="z-source z-css">
+</span><span class="z-source z-css"><span class="z-meta z-selector z-css"><span class="z-entity z-name z-tag z-css">code</span><span class="z-punctuation z-separator z-sequence z-css">,</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-selector z-css"><span class="z-entity z-name z-tag z-css">pre</span><span class="z-punctuation z-separator z-sequence z-css">,</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-selector z-css"><span class="z-entity z-name z-tag z-css">kbd</span> </span><span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>Source Code Pro<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span><span class="z-punctuation z-separator z-sequence z-css">,</span> <span class="z-support z-constant z-font-name z-css">monospace</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">line-height</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-constant z-numeric z-integer z-decimal z-css">100<span class="z-keyword z-other z-unit z-css">%</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">word-wrap</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-constant z-property-value z-css">break-word</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span><span class="z-source z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span>
+</span><span class="z-source z-css">
+</span></code></pre>
+<h1 id="emoji-troubles">Emoji troubles</h1>
+<p>The problem I found was that after applying EB Garamond, the emojis I was using around the site like these lovely flags
+🇸🇪🇬🇧🇺🇸🇭🇷🇧🇦🇷🇸🇩🇪 just stopped working. Instead I saw emoji placeholders like "S E G B U S H R B H R S D E", if that makes
+sense. The browser was trying to find an emoji inside of EB Garamond, but EB Garamond doesn't seem to have any emojis.</p>
+<p>To solve this, I had to select the unicode range I wanted to use from EB Garamond, and then fall back to <code>serif</code> or <code>sans-serif</code>
+for any other glyph, which is easy enough, just add the <code>unicode-range</code> propery of <code>@font-face</code>.</p>
+<pre data-lang="css" class="language-css z-code"><code class="language-css" data-lang="css"><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-keyword z-control z-at-rule z-font-face z-css"><span class="z-punctuation z-definition z-keyword z-css">@</span>font-face</span> <span class="z-meta z-property-list z-css"><span class="z-punctuation z-section z-property-list z-css">{</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-family</span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>EBGaramond<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span></span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-style</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-constant z-property-value z-css">normal</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-weight</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-constant z-numeric z-integer z-decimal z-css">400</span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">font-display</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css">swap</span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">src</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-meta z-function-call z-css"><span class="z-support z-function z-url z-css">url</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-double z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&quot;</span>/fonts/EBGaramond.ttf<span class="z-punctuation z-definition z-string z-end z-css">&quot;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span> <span class="z-meta z-function-call z-css"><span class="z-support z-function z-font-face z-css">format</span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-begin z-css">(</span><span class="z-string z-quoted z-single z-css"><span class="z-punctuation z-definition z-string z-begin z-css">&#39;</span>truetype<span class="z-punctuation z-definition z-string z-end z-css">&#39;</span></span></span><span class="z-meta z-group z-css"><span class="z-punctuation z-definition z-group z-end z-css">)</span></span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span><mark><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css">    <span class="z-meta z-property-name z-css"><span class="z-support z-type z-property-name z-css">unicode-range</span></span><span class="z-punctuation z-separator z-key-value z-css">:</span><span class="z-meta z-property-value z-css"> </span><span class="z-meta z-property-value z-css"><span class="z-support z-unicode-range z-css"><span class="z-support z-constant z-unicode-range z-prefix z-css">U+</span><span class="z-constant z-codepoint-range z-css">0000<span class="z-punctuation z-section z-range z-css">-</span>017F</span></span></span><span class="z-punctuation z-terminator z-rule z-css">;</span>
+</span></span></span></mark><span class="z-source z-css"><span class="z-meta z-at-rule z-font-face z-css"><span class="z-meta z-property-list z-css"></span><span class="z-punctuation z-section z-property-list z-css">}</span></span>
+</span></code></pre>
+<p>I chose the range <code>U+0000-017F</code> because that's what I need. You can use the <a href="https://symbl.cc/en/unicode/table/">symbl.cc Unicode Character Table</a>
+to find out which glyphs you might need. I chose <em>Basic Latin</em>, <em>Latin-1 Supplement</em>, and <em>Latin Extended-A</em> because together
+they cover the glyphs I use — the ones I need to spell my name — <em>Erik Živković</em>.</p>
+<h1 id="setting-up-a-venv-for-fonttools">Setting up a venv for fonttools</h1>
+<p>For a Python non-believer like me this might actually be the hardest part.</p>
+<p>My setup script <code>py-setup.sh</code> looks like this.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">!/bin/bash</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">python3</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>m</span> venv .venv</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-source z-shell">source</span></span><span class="z-meta z-function-call z-arguments z-shell"> .venv/bin/activate</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pip3</span></span><span class="z-meta z-function-call z-arguments z-shell"> install fonttools</span>
+</span></code></pre>
+<h1 id="reducing-the-number-of-glyphs">Reducing the number of glyphs</h1>
+<p>To reduce the number of glyphs I ran this script, adapted from Cliffle's blog, that I call <code>py-fixfonts.sh</code></p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">!/bin/bash</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-source z-shell">source</span></span><span class="z-meta z-function-call z-arguments z-shell"> .venv/bin/activate</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pyftsubset</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell">    font-orig/EB_Garamond/EBGaramond-VariableFont_wght.ttf <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>unicodes</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>U+0000-017F<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>ignore-missing-glyphs</span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>layout-features-</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span>dnom,frac,numr <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>output-file</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span>static/fonts/EBGaramond.ttf</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pyftsubset</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell">    font-orig/Josefin_Sans/JosefinSans-VariableFont_wght.ttf <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>text</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>Domain Specific Language Front page · Blog · Photos<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>ignore-missing-glyphs</span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>layout-features-</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span>dnom,frac,numr <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>output-file</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span>static/fonts/JosefinSans.ttf</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pyftsubset</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell">    font-orig/SourceCodePro/TTF/SourceCodePro-Regular.ttf <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>unicodes</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>U+0000-017F,U+2500-25FF<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>ignore-missing-glyphs</span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>layout-features-</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span>dnom,frac,numr <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">    --</span>output-file</span><span class="z-keyword z-operator z-assignment z-option z-shell">=</span>static/fonts/SourceCodePro.ttf</span>
+</span></code></pre>
+<p>The Josefin Sans fonts is only used for the page title and the section links, so I tell <code>pyftsubset</code> to only keep the
+glyphs needed for exactly those texts.</p>
+<h1 id="results">Results</h1>
+<p>The table below says it all, size for the EB Garamond font was reduced to about 10% of its original size, and
+Josefin Sans too was reduced to a similar percentage of the original.</p>
+<div class="hscroll">
+    <table><thead><tr><th>Font</th><th>Size before</th><th>Size After</th></tr></thead><tbody>
+<tr><td>EBGaramond-VariableFont_wght.ttf</td><td>927 kB</td><td>95 kB</td></tr>
+<tr><td>JosefinSans-VariableFont_wght.ttf</td><td>118 kB</td><td>10 kB</td></tr>
+<tr><td>SourceCodePro-Regular.ttf</td><td>205 kB</td><td>57 kB</td></tr>
+</tbody></table>
+
+</div>
+<h1 id="final-notes">Final notes</h1>
+<p>I assume the <code>unicode-range</code> property could be removed at this point, but I'll keep it around anyway, since I think
+it's cute.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

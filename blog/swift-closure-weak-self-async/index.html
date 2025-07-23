@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/swift-closure-weak-self-async/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Swift: Using [weak self] as control flow: callbacks vs async&#x2F;await —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Swift: Using [weak self] as control flow: callbacks vs async&#x2F;await —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Swift: Using [weak self] as control flow: callbacks vs async&#x2F;await —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. [weak self] to the rescue?" />
+        <meta name="twitter:description" content="Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. [weak self] to the rescue?">
+        <meta property="og:description" content="Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. [weak self] to the rescue?" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Swift: Using [weak self] as control flow: callbacks vs async&#x2F;await
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">21 April 2024 · reading time 3 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/swift/">swift</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/async/">async</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/swift-closure-weak-self-async/#simple-callback">Simple callback</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/swift-closure-weak-self-async/#checking-in-a-loop">Checking in a loop</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/swift-closure-weak-self-async/#final-words">Final words</a>
+        </li>
+        
+    </ol>
+    
+
+<p>Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. <code>[weak self]</code> to the rescue?</p>
+<span id="continue-reading"></span><h1 id="simple-callback">Simple callback</h1>
+<p>When writing UIs in Swift, mainly UIKit from the point-of-view of this post,
+it usually goes something like this:</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">onButtonPress</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        networkCall1() {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            [<span class="z-keyword z-other z-declaration-modifier z-swift">weak</span> <span class="z-keyword z-other z-statement z-swift">self</span>] <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> <span class="z-keyword z-other z-statement z-swift">self</span> <span class="z-keyword z-control z-if z-swift">else</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span><span class="z-source z-swift">            networkCall2() {
+</span><span class="z-source z-swift">                [<span class="z-keyword z-other z-declaration-modifier z-swift">weak</span> <span class="z-keyword z-other z-statement z-swift">self</span>] <span class="z-keyword z-control z-loop z-swift">in</span>
+</span><span class="z-source z-swift">                <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> <span class="z-keyword z-other z-statement z-swift">self</span> <span class="z-keyword z-control z-if z-swift">else</span> {
+</span><span class="z-source z-swift">                    <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span><span class="z-source z-swift">                }
+</span><span class="z-source z-swift">                <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing2()
+</span><span class="z-source z-swift">            }
+</span><span class="z-source z-swift">        }
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p>Each time a network call has been performed, you get a chance to check if <code>self</code>
+has been freed, and decide what to do. This is butt ugly, boring to write, and
+a pain. It does have the nice property of being a reasonably easy way to avoid
+retain cycles.</p>
+<p>It becomes a bit gnarlier when you want to write aesthetically pleasing async code,
+since we chose async / await to avoid indentation in the first place. There is no
+natural way to avoid retain cycles.</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">onButtonPress</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        Task {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-storage z-modifier z-attribute z-swift"><span class="z-punctuation z-definition z-attribute z-swift">@</span>MainActor</span> <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            await networkCall1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            await networkCall1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing2()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p><code>self</code> will be retained until all the network calls are done. This might not be
+a big deal, so let's look at a more complicated example.</p>
+<h1 id="checking-in-a-loop">Checking in a loop</h1>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">loop</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        networkCall() {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            [<span class="z-keyword z-other z-declaration-modifier z-swift">weak</span> <span class="z-keyword z-other z-statement z-swift">self</span>] <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> <span class="z-keyword z-other z-statement z-swift">self</span> <span class="z-keyword z-control z-if z-swift">else</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span><span class="z-source z-swift">            <span class="z-comment z-line z-double-slash z-swift"><span class="z-punctuation z-definition z-comment z-line z-double-slash z-swift">//</span> Create a timer that fires after 5s</span>
+</span><span class="z-source z-swift">            delay(by: <span class="z-constant z-numeric z-integer z-decimal z-swift">5</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span><span class="z-constant z-numeric z-integer z-decimal z-swift">0</span>) {
+</span><span class="z-source z-swift">                [<span class="z-keyword z-other z-declaration-modifier z-swift">weak</span> <span class="z-keyword z-other z-statement z-swift">self</span>] <span class="z-keyword z-control z-loop z-swift">in</span>
+</span><span class="z-source z-swift">                <span class="z-keyword z-statement z-swift">guard</span> <span class="z-storage z-type z-swift">let</span> <span class="z-keyword z-other z-statement z-swift">self</span> <span class="z-keyword z-control z-if z-swift">else</span> {
+</span><span class="z-source z-swift">                    <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span><span class="z-source z-swift">                }
+</span><span class="z-source z-swift">                <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>loop()
+</span><span class="z-source z-swift">            }
+</span><span class="z-source z-swift">        }
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p>The loop above will be terminated as soon as the UI is freed, which is what we
+wanted.</p>
+<p>What seems to be a nice way to write that using async?</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">loop</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        Task {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-storage z-modifier z-attribute z-swift"><span class="z-punctuation z-definition z-attribute z-swift">@</span>MainActor</span> <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-control z-loop z-swift">repeat</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                await <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>networkCall()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-statement z-swift">try</span>? await Task<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>sleep(nanoseconds: <span class="z-constant z-numeric z-integer z-decimal z-swift">5_000_000_000</span>)
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span> <span class="z-keyword z-control z-loop z-swift">while</span> <span class="z-keyword z-operator z-logical z-swift">!</span>Task<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>isCancelled
+</span><span class="z-source z-swift">        }
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p>Really nice looking, but now we need to handle the fact that we can't stop this loop
+in any reasonable way.</p>
+<h2 id="attempt-1-task-cancellation">Attempt 1: Task cancellation</h2>
+<p>Our first attempt might be storing the <code>Task</code> and cancelling it when needed.</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-storage z-type z-swift">var</span> loopTask: Task<span class="z-keyword z-operator z-comparative z-swift">&lt;</span>(), Error<span class="z-keyword z-operator z-comparative z-swift">&gt;</span>?
+</span><span class="z-source z-swift">    
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">loop</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>loopTask <span class="z-keyword z-operator z-assignment z-swift">=</span> Task {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-storage z-modifier z-attribute z-swift"><span class="z-punctuation z-definition z-attribute z-swift">@</span>MainActor</span> <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-control z-loop z-swift">repeat</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                await networkCall()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-statement z-swift">try</span>? await Task<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>sleep(nanoseconds: <span class="z-constant z-numeric z-integer z-decimal z-swift">5_000_000_000</span>)
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span> <span class="z-keyword z-control z-loop z-swift">while</span> <span class="z-keyword z-operator z-logical z-swift">!</span>Task<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>isCancelled
+</span><span class="z-source z-swift">        }
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">    
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">cancel</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>loopTask?<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>cancel()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">    <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p>This will work if we make sure to call <code>cancel</code> on <em>every</em> path that can leave
+our <code>UIViewController</code>. This might be feasible, but it's not very maintainable. Seven years from
+now the next programmer updating the <code>UIViewController</code> will need to do the right thing.</p>
+<h2 id="attempt-2-avoid-the-retain-cycle">Attempt 2: Avoid the retain cycle</h2>
+<p>Our second attempt is to avoid a retain cycle, which might look like this:</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">loop</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        Task {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-storage z-modifier z-attribute z-swift"><span class="z-punctuation z-definition z-attribute z-swift">@</span>MainActor</span> [<span class="z-keyword z-other z-declaration-modifier z-swift">weak</span> <span class="z-keyword z-other z-statement z-swift">self</span>] <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            await networkCall1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span>?<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            await networkCall2()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span>?<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing2()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-statement z-swift">try</span>? await Task<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>sleep(nanoseconds: <span class="z-constant z-numeric z-integer z-decimal z-swift">5_000_000_000</span>)
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span>?<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>loop()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span>
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<p>This is an uncomplicated example, but notice how we'll keep doing network calls
+even if <code>self</code> has been freed. The only thing we'll skip are the function calls
+<code>self?.thing1()</code> and <code>self?.thing2()</code>. This may be undesirable!</p>
+<p>Another issue with this approach is that since we spawn new <code>Task</code>s all the time,
+it's not immediately possible (without some work) to cancel a long chain or tree
+of these.</p>
+<h2 id="attempt-3-checking-self-after-every-await">Attempt 3: checking self after every await</h2>
+<p>It's possible to check the state of <code>self</code> with continuous if-statements, but then
+we're writing icky code again:</p>
+<pre data-lang="swift" class="language-swift z-code"><code class="language-swift" data-lang="swift"><span class="z-source z-swift"><span class="z-storage z-type z-swift">class</span> SomeUI: UIViewController {
+</span><span class="z-source z-swift">    <span class="z-meta z-function-declaration z-swift"><span class="z-storage z-type z-function z-swift">func</span> <span class="z-entity z-type z-function z-swift">loop</span><span class="z-meta z-parameter-clause z-swift"><span class="z-punctuation z-definition z-function-arguments z-begin z-swift">(</span><span class="z-punctuation z-definition z-function-arguments z-end z-swift">)</span></span> <span class="z-punctuation z-definition z-code-block z-begin z-swift">{</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">        Task {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-storage z-modifier z-attribute z-swift"><span class="z-punctuation z-definition z-attribute z-swift">@</span>MainActor</span> [<span class="z-keyword z-other z-declaration-modifier z-swift">weak</span> <span class="z-keyword z-other z-statement z-swift">self</span>] <span class="z-keyword z-control z-loop z-swift">in</span>
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            await networkCall1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-keyword z-control z-if z-swift">if</span> <span class="z-storage z-type z-swift">let</span> <span class="z-keyword z-other z-statement z-swift">self</span> {
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">                <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing1()
+</span></span><span class="z-source z-swift"><span class="z-meta z-function-declaration z-swift">            <span class="z-punctuation z-definition z-code-block z-end z-swift">}</span></span> <span class="z-keyword z-control z-if z-swift">else</span> {
+</span><span class="z-source z-swift">                <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span><span class="z-source z-swift">            }
+</span><span class="z-source z-swift">            await networkCall2()
+</span><span class="z-source z-swift">            <span class="z-keyword z-control z-if z-swift">if</span> <span class="z-storage z-type z-swift">let</span> <span class="z-keyword z-other z-statement z-swift">self</span> {
+</span><span class="z-source z-swift">                <span class="z-keyword z-other z-statement z-swift">self</span><span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>thing2()
+</span><span class="z-source z-swift">            } <span class="z-keyword z-control z-if z-swift">else</span> {
+</span><span class="z-source z-swift">                <span class="z-keyword z-control z-transfer z-swift">return</span>
+</span><span class="z-source z-swift">            }
+</span><span class="z-source z-swift">            <span class="z-keyword z-statement z-swift">try</span>? await Task<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>sleep(nanoseconds: <span class="z-constant z-numeric z-integer z-decimal z-swift">5_000_000_000</span>)
+</span><span class="z-source z-swift">            <span class="z-keyword z-other z-statement z-swift">self</span>?<span class="z-keyword z-operator z-custom z-postfix z-unary z-swift">.</span>loop()
+</span><span class="z-source z-swift">        }
+</span><span class="z-source z-swift">    }
+</span><span class="z-source z-swift">}
+</span></code></pre>
+<h1 id="final-words">Final words</h1>
+<p>The lifecycle of UI in Swift in general, and UIKit in particular is substandard.
+There's a lot to be said about React but at least it's possible to be able to
+do cleanup using a <code>useEffect</code>.</p>
+<p>This is harder than I wish it was in Swift. In the end, we're responsible for
+writing code that works well, but it should be easier to get the system
+to help out than it is in Swift / iOS.</p>
+<p>There are probably more ways to solve the retain cycle problem than the ones
+listed above, but we have at least three tools with different tradeoffs.</p>
+<p>Is there an even better way? Let me know.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

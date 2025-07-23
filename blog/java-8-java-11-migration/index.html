@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/java-8-java-11-migration/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Java 8 to 11: TLDR edition —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Java 8 to 11: TLDR edition —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Java 8 to 11: TLDR edition —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="It's been two years and two months since I last wrote a blog post - I promise to make it count!" />
+        <meta name="twitter:description" content="It's been two years and two months since I last wrote a blog post - I promise to make it count!">
+        <meta property="og:description" content="It's been two years and two months since I last wrote a blog post - I promise to make it count!" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Java 8 to 11: TLDR edition
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">31 December 2018 · reading time 5 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/java/">java</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/gradle/">gradle</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#updates">Updates</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#why-now">Why now?</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#prerequisites">Prerequisites</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#relevant-documentation">Relevant documentation</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#why-openjdk">Why OpenJDK?</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#list-available-java-versions">List available Java versions</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#getting-java-11-installed">Getting Java 11 installed</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#update-to-use-gradle-5-0">Update to use Gradle 5.0</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#java-modules-project-jigsaw">Java Modules &#x2F; Project Jigsaw</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#intellij-idea-support">IntelliJ IDEA support</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#what-did-i-get">What did I get?</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#error-prone">Error Prone</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/java-8-java-11-migration/#combining-gradle-error-prone-and-lombok">Combining Gradle, Error Prone, and Lombok</a>
+        </li>
+        
+    </ol>
+    
+
+<p>It's been two years and two months since I last wrote a blog post - I promise to make it count!</p>
+<span id="continue-reading"></span><h1 id="updates">Updates</h1>
+<ul>
+<li><em>2019-01-05</em> Added section on combining Gradle, Error Prone, and Lombok.</li>
+<li><em>2019-01-05</em> Clarified which JNLP image to use.</li>
+<li><em>2019-01-18</em> Added section on JDK/JRE/JVM switching in a IntelliJ project that uses Gradle.</li>
+</ul>
+<h1 id="why-now">Why <em>now</em>?</h1>
+<ul>
+<li>The Jenkins Docker JNLP Slave image finally has a version that supports Java 11!
+<ul>
+<li>Use <code>FROM jenkins/jnlp-slave:latest-jdk11</code> for now.</li>
+<li><a href="https://issues.jenkins-ci.org/browse/JENKINS-51986">Issue tracker</a></li>
+<li><a href="https://hub.docker.com/r/jenkins/jnlp-slave/">Docker Hub</a></li>
+<li><a href="https://github.com/jenkinsci/docker-jnlp-slave">GitHub</a></li>
+</ul>
+</li>
+<li>Many projects have recently solved their initial <em>Java 9</em> issues (which are required for Java 11 support)
+<ul>
+<li>Including Spring!</li>
+</ul>
+</li>
+<li>I am no longer procrastinating.</li>
+<li>Maybe you thought the title would explain why I stopped blogging.</li>
+</ul>
+<h1 id="prerequisites">Prerequisites</h1>
+<ul>
+<li>macOS 10.14</li>
+<li><a href="https://brew.sh/">Homebrew</a></li>
+</ul>
+<p>If you skip the parts about installing Java 11 it's mostly platform independent after that.</p>
+<h1 id="relevant-documentation">Relevant documentation</h1>
+<p>If you don't want to read the rest of my incoherent ramblings:</p>
+<ul>
+<li><a href="https://github.com/AdoptOpenJDK/homebrew-openjdk">Install OpenJDK 11 using brew</a></li>
+<li><a href="https://docs.oracle.com/javase/9/migrate/">Oracle: Migrate to Java 9</a></li>
+</ul>
+<h1 id="why-openjdk">Why OpenJDK?</h1>
+<p>As mentioned in <a href="https://blog.jetbrains.com/idea/2018/09/using-java-11-in-production-important-things-to-know/">JetBrains: Using Java 11 In Production: Important Things To Know</a>
+(by Trisha Gee!)</p>
+<blockquote>
+<p>Oracle’s JDK (commercial) – you can use this in development and testing for free, but if you use it in production you have to pay for it.</p>
+</blockquote>
+<p>You <em>probably</em> don't want to pay for it.</p>
+<p>Even better:</p>
+<blockquote>
+<p>Note that since Java 11, Oracle’s commercial JDK and Oracle’s OpenJDK builds are functionally the same, so we should be able to run our applications on either without having to make any changes or losing any features.</p>
+</blockquote>
+<h1 id="list-available-java-versions">List available Java versions</h1>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/usr/libexec/java_home</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>V</span></span>
+</span></code></pre>
+<p>On my machine this currently yields</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell"><span class="z-meta z-group z-expansion z-job z-shell"><span class="z-punctuation z-definition z-variable z-job z-shell">%</span></span></span></span><span class="z-meta z-function-call z-arguments z-shell"> /usr/libexec/java_home<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>V</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Matching</span></span><span class="z-meta z-function-call z-arguments z-shell"> Java Virtual Machines (2</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-support z-function z-colon z-shell">:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1.8.0_144,</span></span><span class="z-meta z-function-call z-arguments z-shell"> x86_64:	<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>Java SE 8<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>	/Library/Java/JavaVirtualMachines/jdk1.8.0_144.jdk/Contents/Home</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/Library/Java/JavaVirtualMachines/jdk1.8.0_144.jdk/Contents/Home</span></span>
+</span></code></pre>
+<h1 id="getting-java-11-installed">Getting Java 11 installed</h1>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">brew</span></span><span class="z-meta z-function-call z-arguments z-shell"> tap AdoptOpenJDK/openjdk</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">brew</span></span><span class="z-meta z-function-call z-arguments z-shell"> cask install adoptopenjdk11</span>
+</span></code></pre>
+<p>And now let's check what happened</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell"><span class="z-meta z-group z-expansion z-job z-shell"><span class="z-punctuation z-definition z-variable z-job z-shell">%</span></span></span></span><span class="z-meta z-function-call z-arguments z-shell"> /usr/libexec/java_home<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>V</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Matching</span></span><span class="z-meta z-function-call z-arguments z-shell"> Java Virtual Machines (2</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-support z-function z-colon z-shell">:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">11.0.1,</span></span><span class="z-meta z-function-call z-arguments z-shell"> x86_64:	<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>AdoptOpenJDK 11.0.1<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>	/Library/Java/JavaVirtualMachines/adoptopenjdk-11.0.1.jdk/Contents/Home</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1.8.0_144,</span></span><span class="z-meta z-function-call z-arguments z-shell"> x86_64:	<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>Java SE 8<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>	/Library/Java/JavaVirtualMachines/jdk1.8.0_144.jdk/Contents/Home</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/Library/Java/JavaVirtualMachines/adoptopenjdk-11.0.1.jdk/Contents/Home</span></span>
+</span></code></pre>
+<p>Magic!</p>
+<p>Now if I wanted to, I could uninstall Java 8, probably. But I don't. You might though.</p>
+<p>If you want to, please do:</p>
+<ul>
+<li><a href="https://stackoverflow.com/questions/19039752/removing-java-8-jdk-from-mac">StackOverflow: Uninstall Java 8</a></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/install/mac_jdk.html">Oracle: Uninstall Java 8</a></li>
+</ul>
+<h1 id="update-to-use-gradle-5-0">Update to use Gradle 5.0</h1>
+<p>Gradle 5+ is required for Java 11. Do your upgrade in whatever way you usually do it. Personally I add a configuration
+to my root <code>build.gradle</code> file that looks like this:</p>
+<pre data-lang="groovy" class="language-groovy z-code"><code class="language-groovy" data-lang="groovy"><span class="z-source z-groovy">wrapper <span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-begin z-groovy">{</span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    gradleVersion <span class="z-keyword z-operator z-assignment z-groovy">=</span> <span class="z-string z-quoted z-single z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&#39;</span>5.0<span class="z-punctuation z-definition z-string z-end z-groovy">&#39;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    distributionType <span class="z-keyword z-operator z-assignment z-groovy">=</span> <span class="z-storage z-type z-class z-groovy">Wrapper</span><span class="z-punctuation z-accessor z-dot z-groovy">.</span><span class="z-storage z-type z-class z-groovy">DistributionType</span><span class="z-punctuation z-accessor z-dot z-groovy">.</span><span class="z-constant z-other z-groovy">ALL</span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-end z-groovy">}</span></span>
+</span></code></pre>
+<p>And then just run the associated task <code>./gradlew wrapper</code>, which updates Gradle for that project.</p>
+<h1 id="java-modules-project-jigsaw">Java Modules / Project Jigsaw</h1>
+<p>No need to use <code>Java Modules</code> if you don't want or need them!</p>
+<h1 id="intellij-idea-support">IntelliJ IDEA support</h1>
+<h2 id="add-and-set-the-jdk">Add and set the JDK</h2>
+<p>First add Java 11 as a JDK - go to <code>File -&gt; Project Structure -&gt; Project</code>. Click <code>New</code> next to the Project SDK dropdown,
+(if Java 11 is not already present in the dropdown list). Now find the install path of Java 11. Should be the path
+that was output from the above <code>java_home</code> command: <code>/Library/Java/JavaVirtualMachines/adoptopenjdk-11.0.1.jdk/Contents/Home</code>.</p>
+<p>When switching the project between JDK 8 and JDK 11, which might happen when switching branches or fixing bugs based on
+older commits, you may need to visit the <code>Project Structure</code> dialog again.</p>
+<h2 id="set-jdk-jre-for-the-gradle-runtime">Set JDK/JRE for the Gradle runtime</h2>
+<p>This is important since for some reason the project JDK isn't the same as the Gradle JDK/JRE.</p>
+<p>Open the <code>Gradle sidebar</code> and click on the <code>wrench</code>, or go to <code>Preferences -&gt; Build, Execution, Deployment -&gt; Build Tools -&gt; Gradle</code>.
+There you will find a box called <code>Gradle JVM</code> where you can select which version of Java that gradle should run as when
+IntelliJ needs to run it.</p>
+<p>This is important if you use the IntelliJ builder for compiling, but delegate to Gradle when testing.</p>
+<h2 id="use-a-gradle-configuration-to-set-jdk-version-for-intellij-subprojects">Use a Gradle configuration to set JDK version for IntelliJ subprojects</h2>
+<p>Go to the root <code>build.gradle</code> and enter this nugget somewhere:</p>
+<pre data-lang="groovy" class="language-groovy z-code"><code class="language-groovy" data-lang="groovy"><span class="z-source z-groovy">allprojects <span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-begin z-groovy">{</span> project <span class="z-keyword z-operator z-arrow z-groovy">-&gt;</span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    project<span class="z-punctuation z-accessor z-dot z-groovy">.</span>plugins<span class="z-punctuation z-accessor z-dot z-groovy">.</span><span class="z-meta z-method-call z-groovy"><span class="z-meta z-method z-groovy">withId</span><span class="z-punctuation z-definition z-method-parameters z-begin z-groovy">(</span><span class="z-string z-quoted z-single z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&#39;</span>java<span class="z-punctuation z-definition z-string z-end z-groovy">&#39;</span></span><span class="z-punctuation z-definition z-method-parameters z-end z-groovy">)</span></span> <span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-begin z-groovy">{</span>
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-meta z-block z-groovy">        sourceCompatibility <span class="z-keyword z-operator z-assignment z-groovy">=</span> <span class="z-constant z-numeric z-groovy">11.0</span>
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-meta z-block z-groovy">        targetCompatibility <span class="z-keyword z-operator z-assignment z-groovy">=</span> <span class="z-constant z-numeric z-groovy">11.0</span>
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-meta z-block z-groovy">    <span class="z-punctuation z-section z-block z-end z-groovy">}</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    project<span class="z-punctuation z-accessor z-dot z-groovy">.</span>plugins<span class="z-punctuation z-accessor z-dot z-groovy">.</span><span class="z-meta z-method-call z-groovy"><span class="z-meta z-method z-groovy">withId</span><span class="z-punctuation z-definition z-method-parameters z-begin z-groovy">(</span><span class="z-string z-quoted z-single z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&#39;</span>java-library<span class="z-punctuation z-definition z-string z-end z-groovy">&#39;</span></span><span class="z-punctuation z-definition z-method-parameters z-end z-groovy">)</span></span> <span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-begin z-groovy">{</span>
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-meta z-block z-groovy">        sourceCompatibility <span class="z-keyword z-operator z-assignment z-groovy">=</span> <span class="z-constant z-numeric z-groovy">11.0</span>
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-meta z-block z-groovy">        targetCompatibility <span class="z-keyword z-operator z-assignment z-groovy">=</span> <span class="z-constant z-numeric z-groovy">11.0</span>
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-meta z-block z-groovy">    <span class="z-punctuation z-section z-block z-end z-groovy">}</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-end z-groovy">}</span></span>
+</span></code></pre>
+<p>Now refresh the Gradle project in IntelliJ and you should be able to use Java 11 everywhere, since IntelliJ picks up
+that subprojects are Java 11.</p>
+<h1 id="what-did-i-get">What did I get?</h1>
+<p><a href="https://en.wikipedia.org/wiki/Java_version_history#Java_SE_9">Wikipedia has got your back</a>, but here's the TLDR:</p>
+<ul>
+<li>Java 9
+<ul>
+<li><code>G1 Garbage Collector</code> is now default</li>
+<li>Not much else, <code>Java Modules</code> is probably the only thing of developer interest and you don't need to use it unless
+you are writing a library</li>
+</ul>
+</li>
+<li>Java 10
+<ul>
+<li><code>var</code> keyword and <em>Local-variable type inference</em></li>
+<li>The rest is mostly runtime and behind-the-scenes stuff</li>
+</ul>
+</li>
+<li>Java 11
+<ul>
+<li><em>Local-Variable Syntax for Lambda Parameters</em>, more <code>var</code> :)</li>
+</ul>
+</li>
+</ul>
+<p>But mostly you got the freedom and/or burden to adopt new Java versions faster!</p>
+<h1 id="error-prone">Error Prone</h1>
+<p>You can now use the latest version of <code>Error Prone</code>, which should make you very happy.</p>
+<ul>
+<li><a href="https://errorprone.info/">Project page</a></li>
+<li><a href="https://github.com/tbroyer/gradle-errorprone-plugin">Gradle plugin</a></li>
+</ul>
+<h1 id="combining-gradle-error-prone-and-lombok">Combining Gradle, Error Prone, and Lombok</h1>
+<p>To get Gradle 5.0 to accept Lombok using Java 11 in combination with Error Prone I had to change the following</p>
+<p>From</p>
+<pre data-lang="groovy" class="language-groovy z-code"><code class="language-groovy" data-lang="groovy"><span class="z-source z-groovy">dependencies <span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-begin z-groovy">{</span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    compileOnly <span class="z-string z-quoted z-double z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&quot;</span>org.projectlombok:lombok<span class="z-punctuation z-definition z-string z-end z-groovy">&quot;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    testCompileOnly <span class="z-string z-quoted z-double z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&quot;</span>org.projectlombok:lombok<span class="z-punctuation z-definition z-string z-end z-groovy">&quot;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    <span class="z-comment z-line z-double-slash z-groovy"><span class="z-punctuation z-definition z-comment z-groovy">//</span> ... more dependencies
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-end z-groovy">}</span></span>
+</span></code></pre>
+<p>To</p>
+<pre data-lang="groovy" class="language-groovy z-code"><code class="language-groovy" data-lang="groovy"><span class="z-source z-groovy">dependencies <span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-begin z-groovy">{</span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    compileOnly <span class="z-string z-quoted z-double z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&quot;</span>org.projectlombok:lombok<span class="z-punctuation z-definition z-string z-end z-groovy">&quot;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    annotationProcessor <span class="z-string z-quoted z-double z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&quot;</span>org.projectlombok:lombok<span class="z-punctuation z-definition z-string z-end z-groovy">&quot;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    testCompileOnly <span class="z-string z-quoted z-double z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&quot;</span>org.projectlombok:lombok<span class="z-punctuation z-definition z-string z-end z-groovy">&quot;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    testAnnotationProcessor <span class="z-string z-quoted z-double z-groovy"><span class="z-punctuation z-definition z-string z-begin z-groovy">&quot;</span>org.projectlombok:lombok<span class="z-punctuation z-definition z-string z-end z-groovy">&quot;</span></span>
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    
+</span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy">    <span class="z-comment z-line z-double-slash z-groovy"><span class="z-punctuation z-definition z-comment z-groovy">//</span> ... more dependencies
+</span></span></span><span class="z-source z-groovy"><span class="z-meta z-block z-groovy"><span class="z-punctuation z-section z-block z-end z-groovy">}</span></span>
+</span></code></pre>
+<p>That way, Error Prone knows about the code generated by Lombok.</p>
+<p>Please note that I define dependency versions globally using the
+<a href="https://github.com/spring-gradle-plugins/dependency-management-plugin/releases">Spring Dependency Management Plugin</a>.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

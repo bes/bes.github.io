@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/dependent-git-commits/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Easily manage a chain of commits and their respective Pull Requests using git —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Easily manage a chain of commits and their respective Pull Requests using git —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Easily manage a chain of commits and their respective Pull Requests using git —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="This blog post was originally posted as a
+Q&amp;A style answer on Stack Overflow.
+I recently edited the answer on Stack Overflow, with a slightly improved method,
+so I felt like sharing it on my personal blog would be beneficial too.
+(A Q&amp;A style question on Stack Overflow is a question that you answer at the same time as you ask the question,
+kind of like writing a blog post but right on Stack Overflow instead, under the guise of a question)" />
+        <meta name="twitter:description" content="This blog post was originally posted as a
+Q&amp;A style answer on Stack Overflow.
+I recently edited the answer on Stack Overflow, with a slightly improved method,
+so I felt like sharing it on my personal blog would be beneficial too.
+(A Q&amp;A style question on Stack Overflow is a question that you answer at the same time as you ask the question,
+kind of like writing a blog post but right on Stack Overflow instead, under the guise of a question)">
+        <meta property="og:description" content="This blog post was originally posted as a
+Q&amp;A style answer on Stack Overflow.
+I recently edited the answer on Stack Overflow, with a slightly improved method,
+so I felt like sharing it on my personal blog would be beneficial too.
+(A Q&amp;A style question on Stack Overflow is a question that you answer at the same time as you ask the question,
+kind of like writing a blog post but right on Stack Overflow instead, under the guise of a question)" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Easily manage a chain of commits and their respective Pull Requests using git
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date"> 8 November 2021 · reading time 6 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/git/">git</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/ci/">ci</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/pull-requests/">pull requests</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/gerrit/">gerrit</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#the-original-question">The original question</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#the-answer">The answer</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#preface">Preface</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#potential-drawbacks">Potential drawbacks</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#method">Method</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#pull-requests">Pull Requests</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#more-commits-handling-review-comments-etc">More commits, handling review comments, etc.</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#cleanup">Cleanup</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#tips">Tips</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#additional-notes">Additional Notes</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/dependent-git-commits/#script">Script</a>
+        </li>
+        
+    </ol>
+    
+
+<p>This blog post was originally posted as a
+<a href="https://stackoverflow.com/questions/61897602/how-can-i-easily-manage-a-chain-of-commits-and-their-respective-pull-requests-us">Q&amp;A style answer on Stack Overflow</a>.
+I recently edited the answer on Stack Overflow, with a slightly improved method,
+so I felt like sharing it on my personal blog would be beneficial too.</p>
+<p>(A Q&amp;A style question on Stack Overflow is a question that you answer at the same time as you ask the question,
+kind of like writing a blog post but right on Stack Overflow instead, under the guise of a question)</p>
+<span id="continue-reading"></span><h1 id="the-original-question">The original question</h1>
+<blockquote>
+<p>I have chain of commits, each commit with its own branch, but they are all part of the same feature.</p>
+<p>When I get comments on my Pull Requests (GitHub/Bitbucket/Whatever) I want all the following Pull Requests to get my fixes with as little manual work as possible.</p>
+<p>In this scenario no one else is using my branches so I am free to force push to them if I need to.</p>
+<p>I used to work at a major Android device manufacturer, and I loved the way Gerrit handled this with ease. Gerrit isn't widely used outside of Android though so I want to find a good workflow that covers the 90% case, even in a large-ish team.</p>
+<p>I usually solve this in one of two ways:</p>
+<ol>
+<li>
+<p>Do fixup commits, push them to their respective branch and then merge upwards however many times is needed until all the branches have all the fixes. This can be a lot of work, depending on how long the chain of commits is.</p>
+</li>
+<li>
+<p>Do a <code>git rebase -i</code> and then do <code>git push origin &lt;sha&gt;:remote-branch</code> as many times as needed. This is also a lot of work, and afterwards there is a mismatch between the local and remote branches (which can be remedied by <code>git reset</code> but that adds even more work). This can also be error prone since it's easy to misspell shas or branch names.</p>
+</li>
+</ol>
+<p>Is there an easier way of managing a chain of commits that are destined for Pull Requests?</p>
+</blockquote>
+<h1 id="the-answer">The answer</h1>
+<p>I found a really good method for handling this on [William Chargin's blog][https://wchargin.github.io/posts/managing-dependent-pull-requests/], for what he calls "Dependent Pull Requests" which is a good way of describing it.</p>
+<p><strong>Edit 2021-11-08</strong>: I have started using <code>git notes</code> for managing the <code>remote-branch</code> instead of adding it to the commit message. This makes the git commit message history much cleaner.</p>
+<p>I have modified the original script, and since it uses an MIT license I have followed the guidelines and added my name as well.</p>
+<p>The following modifications were made to the script:</p>
+<ul>
+<li>Make it compatible with macOS by using a regexp that works on the macOS version of <code>sed</code>.</li>
+<li>Use the git notes command <code>git notes show</code> to get the remote-branch message instead of <code>git show</code>.</li>
+<li>Use a more generic label for the branch name matcher.</li>
+<li>Default to an empty branch prefix.</li>
+</ul>
+<h1 id="preface">Preface</h1>
+<p>To follow along in this answer you need to be reasonably skilled using git, and you have probably used <code>git rebase -i</code> enough to be comfortable with it.</p>
+<p>If this is your first git rodeo, it might be wise to get some experience and come back another time.</p>
+<h1 id="potential-drawbacks">Potential drawbacks</h1>
+<p>The method gets you close to the convenience of Gerrit, as long as you are aware of the potential drawbacks:</p>
+<ul>
+<li>Force pushing isn't always a good strategy.</li>
+<li>All the updated branches will have their tests run again if you have CI (which is good, but also bad if your CI is expensive).</li>
+<li>Watch out for remote branch name collision.</li>
+<li>Some reviewers prefer commit-by-commit changes.</li>
+<li>Probably other stuff too!</li>
+</ul>
+<h1 id="method">Method</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>For this method to work you must configure git to use these settings
+(I like to configure it globally, but you can remove <code>--global</code> if you want it only for a specific repository)</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">git</span></span><span class="z-meta z-function-call z-arguments z-shell"> config<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>global</span> notes.rewriteRef refs/notes/commits</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">git</span></span><span class="z-meta z-function-call z-arguments z-shell"> config<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>global</span> notes.rewrite.amend true</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">git</span></span><span class="z-meta z-function-call z-arguments z-shell"> config<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>global</span> notes.rewrite.rebase true</span>
+</span></code></pre>
+<h2 id="branch-strategy">Branch strategy</h2>
+<p>All your commits live on a single local branch which does not necessarily need to be pushed except if you want to keep a remote backup while your work is in progress (recommended).</p>
+<p>Add as many commits you need to build your logical chain of dependent pull requests. I once used a chain of 11 commits.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> git log<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>oneline</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaa3</span></span><span class="z-meta z-function-call z-arguments z-shell"> (HEAD -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> my-backup-branch</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Feature:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Step 3</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaa2</span></span><span class="z-meta z-function-call z-arguments z-shell"> Feature: Step 2</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaa1</span></span><span class="z-meta z-function-call z-arguments z-shell"> Feature: Step 1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaaa</span></span><span class="z-meta z-function-call z-arguments z-shell"> (origin/master</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Probably</span></span><span class="z-meta z-function-call z-arguments z-shell"> some merge commit</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<h2 id="manage-your-commits">Manage your commits</h2>
+<p>For <strong>each commit in the chain</strong> you must add a <code>git notes</code> that tells the script which remote branch that it should be pushed to. The remote branch does not need to exist. Add the <code>git notes</code> when creating
+the commit or at any time before pushing your changes.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> git notes add<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>m</span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>remote-branch: my-feature-step-3<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> git log</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">commit</span></span><span class="z-meta z-function-call z-arguments z-shell"> aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa3 (HEAD -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> my-backup-branch</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Author:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Erik Zivkovic <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>...<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Date:</span></span><span class="z-meta z-function-call z-arguments z-shell">   Fri May 19 19:47:53 2020 +0200</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Feature:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Step 3</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Notes:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">remote-branch:</span></span><span class="z-meta z-function-call z-arguments z-shell"> my-feature-step-3</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">[...</span></span><span class="z-meta z-function-call z-arguments z-shell"> more commits]</span>
+</span></code></pre>
+<h2 id="ready-for-pushing-and-creating-updating-prs">Ready for pushing and creating/updating PRs</h2>
+<p>I would recommend that you do NOT do a <code>git rebase -i</code> fixup AND use the script at the same time. Perform any changes and then test your chain of commits first, then you push. That is the way I recommend doing it.</p>
+<p>Make sure that all the commits in the chain have a unique <code>remote-branch: &lt;branch name&gt;</code> line!</p>
+<p>To finish it all off call <code>git rebase -i</code> with the <code>-x "git push-to-target"</code> parameter.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> git rebase<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>i</span> aaaaaaaa<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>x</span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>git push-to-target<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">[This</span></span><span class="z-meta z-function-call z-arguments z-shell"> will open your chosen git editor with a git rebase window]</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pick</span></span><span class="z-meta z-function-call z-arguments z-shell"> aaaaaaa1 Feature: Step 1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-exec z-shell">exec</span></span><span class="z-meta z-function-call z-arguments z-shell"> git push-to-target</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pick</span></span><span class="z-meta z-function-call z-arguments z-shell"> aaaaaaa2 Feature: Step 2</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-exec z-shell">exec</span></span><span class="z-meta z-function-call z-arguments z-shell"> git push-to-target</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pick</span></span><span class="z-meta z-function-call z-arguments z-shell"> aaaaaaa3 Feature: Step 3</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-exec z-shell">exec</span></span><span class="z-meta z-function-call z-arguments z-shell"> git push-to-target</span>
+</span></code></pre>
+<p>The magic, of course, is that <code>git rebase</code> stops after each <code>pick</code> command and runs the <code>exec</code> command, which:</p>
+<ul>
+<li>Reads the <code>git notes</code> message.</li>
+<li>Finds the <code>remote-branch</code> line.</li>
+<li>Force Pushes (<code>--force-with-lease</code>) the current <code>HEAD</code> (which points to the <code>pick</code>) to <code>remote-branch</code>.</li>
+<li>If the remote branch does not exist, it is created. Otherwise it is updated.</li>
+</ul>
+<p>If everything worked, you should see updated remote branches in git log.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> git log<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>oneline</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaa3</span></span><span class="z-meta z-function-call z-arguments z-shell"> (HEAD -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> my-backup-branch, origin/my-feature-step-3</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Feature:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Step 3</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaa2</span></span><span class="z-meta z-function-call z-arguments z-shell"> (origin/my-feature-step-2</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Feature:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Step 2</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaa1</span></span><span class="z-meta z-function-call z-arguments z-shell"> (origin/my-feature-step-1</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Feature:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Step 1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">aaaaaaaa</span></span><span class="z-meta z-function-call z-arguments z-shell"> (origin/master</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Probably</span></span><span class="z-meta z-function-call z-arguments z-shell"> some merge commit</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<h1 id="pull-requests">Pull Requests</h1>
+<p>If you did not have any Pull Requests, now is the time to create them using whatever service you have (Github, Bitbucket, ...), and have the branches point to each other in order.</p>
+<p>If the Pull Requests already existed, they should now be updated and tests running again (if you have CI).</p>
+<h1 id="more-commits-handling-review-comments-etc">More commits, handling review comments, etc.</h1>
+<ul>
+<li>If you get review comments, just <code>git rebase -i</code> and do any fixups.</li>
+<li>If you do more feature work, just keep adding commits on top and add unique <code>remote-branch:</code> labels in a <code>git notes</code> for each commit.</li>
+<li>Finally push again with <code>git rebase -i &lt;sha&gt; -x "git push-to-target"</code> (after testing your changes locally, should go without saying).</li>
+</ul>
+<h1 id="cleanup">Cleanup</h1>
+<p>When everything is merged, you might want to delete your remote backup branch.</p>
+<h1 id="tips">Tips</h1>
+<ul>
+<li>Tip: Add the script to your path, then you can use it as <code>git push-to-target</code></li>
+<li>Tip: <code>git config --global alias.ptt push-to-target</code></li>
+<li>Tip: <code>git rebase -i &lt;SHA&gt; -x "git ptt"</code></li>
+</ul>
+<h1 id="additional-notes">Additional Notes</h1>
+<p>Note: I have contacted the developer by e-mail to inform him of my changes and ask what he thinks of them, but I have not yet received an answer.</p>
+<h1 id="script">Script</h1>
+<p>The script <em>should</em> work on Linux/macOS/WSL. I have only tested it on macOS.</p>
+<p>The majority of this script was written by William Chargin, I just made it work on macOS and made some minor changes that seemed good to me.</p>
+<p>File: <code>git-push-to-target</code></p>
+<pre data-lang="sh" class="language-sh z-code"><code class="language-sh" data-lang="sh"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">!/bin/sh</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> git-push-to-target: Push this commit to a branch specified in its</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> commit description.</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Copyright (c) 2017 William Chargin. Released under the MIT license.</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Copyright (c) 2020 Erik Zivkovic.</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Originally https://wchargin.github.io/posts/managing-dependent-pull-requests/</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Usage: For a commit add a git notes line `remote-branch: branchname` then in a rebase do `exec git push-to-target`</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Tip: Add this file to your path, then you can use it as git push-to-target</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Tip: git config --global alias.ptt push-to-target</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Tip: git rebase -i &lt;SHA&gt; -x &quot;git ptt&quot;</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-set z-shell">set</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">-</span>eu</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">DIRECTIVE</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>remote-branch<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>  <span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> any regex metacharacters should be escaped</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">BRANCH_PREFIX</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span><span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>           <span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> Add a branch prefix if needed</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-entity z-name z-function z-shell">target_branch</span><span class="z-punctuation z-section z-parens z-begin z-shell">(</span><span class="z-punctuation z-section z-parens z-end z-shell">)</span> <span class="z-punctuation z-section z-braces z-begin z-shell">{</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-variable z-other z-readwrite z-assignment z-shell">directive</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-command z-parens z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-parens z-begin z-shell">(</span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span></span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-meta z-group z-expansion z-command z-parens z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">git</span></span><span class="z-meta z-function-call z-arguments z-shell"> notes show HEAD <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span></span></span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-meta z-group z-expansion z-command z-parens z-shell"><span class="z-meta z-function-call z-arguments z-shell"></span>        <span class="z-keyword z-operator z-logical z-pipe z-shell">|</span> <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">sed</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>n</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>s/^<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">DIRECTIVE</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span><span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>: \([A-Za-z0-9_.-]*\)$/\1/p<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span> <span class="z-punctuation z-separator z-continuation z-line z-shell">\
+</span></span></span></span></span></span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-meta z-group z-expansion z-command z-parens z-shell"><span class="z-meta z-function-call z-arguments z-shell"></span>        <span class="z-keyword z-operator z-logical z-continue z-shell">;</span> <span class="z-punctuation z-section z-parens z-end z-shell">)</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-keyword z-control z-conditional z-if z-shell">if</span> <span class="z-support z-function z-test z-begin z-shell">[</span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">-</span>z</span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">directive</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-support z-function z-test z-end z-shell">]</span></span><span class="z-keyword z-operator z-logical z-continue z-shell">;</span> <span class="z-keyword z-control z-conditional z-then z-shell">then</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-support z-function z-printf z-shell">printf</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;&amp;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">2</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>error: missing &quot;%s&quot; directive\n<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">DIRECTIVE</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-keyword z-control z-flow z-return z-shell">return</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-keyword z-control z-conditional z-end z-shell">fi</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-keyword z-control z-conditional z-if z-shell">if</span> <span class="z-support z-function z-test z-begin z-shell">[</span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-command z-parens z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-parens z-begin z-shell">(</span><span class="z-meta z-function-call z-shell"><span class="z-support z-function z-printf z-shell">printf</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>%s\n<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">directive</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span> <span class="z-keyword z-operator z-logical z-pipe z-shell">|</span> <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">wc</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>l</span></span><span class="z-punctuation z-section z-parens z-end z-shell">)</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">-</span>gt</span> 1 <span class="z-support z-function z-test z-end z-shell">]</span></span><span class="z-keyword z-operator z-logical z-continue z-shell">;</span> <span class="z-keyword z-control z-conditional z-then z-shell">then</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-support z-function z-printf z-shell">printf</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;&amp;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">2</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>error: multiple &quot;%s&quot; directives\n<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">DIRECTIVE</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-keyword z-control z-flow z-return z-shell">return</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-keyword z-control z-conditional z-end z-shell">fi</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-meta z-function-call z-shell"><span class="z-support z-function z-printf z-shell">printf</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>%s%s\n<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">BRANCH_PREFIX</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">directive</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-punctuation z-section z-braces z-end z-shell">}</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-entity z-name z-function z-shell">main</span><span class="z-punctuation z-section z-parens z-begin z-shell">(</span><span class="z-punctuation z-section z-parens z-end z-shell">)</span> <span class="z-punctuation z-section z-braces z-begin z-shell">{</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-keyword z-control z-conditional z-if z-shell">if</span> <span class="z-support z-function z-test z-begin z-shell">[</span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">1</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-keyword z-operator z-assignment z-shell">:-</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-keyword z-operator z-logical z-shell">=</span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>--query<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> <span class="z-support z-function z-test z-end z-shell">]</span></span><span class="z-keyword z-operator z-logical z-continue z-shell">;</span> <span class="z-keyword z-control z-conditional z-then z-shell">then</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">target_branch</span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">        <span class="z-meta z-function-call z-shell"><span class="z-keyword z-control z-flow z-return z-shell">return</span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-keyword z-control z-conditional z-end z-shell">fi</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-variable z-other z-readwrite z-assignment z-shell">remote</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">1</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-keyword z-operator z-assignment z-shell">:-</span></span><span class="z-meta z-group z-expansion z-parameter z-shell">origin</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-variable z-other z-readwrite z-assignment z-shell">branch</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-command z-parens z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-parens z-begin z-shell">(</span><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">target_branch</span></span><span class="z-punctuation z-section z-parens z-end z-shell">)</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-meta z-function-call z-shell"><span class="z-support z-function z-set z-shell">set</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell">-</span>x</span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">git</span></span><span class="z-meta z-function-call z-arguments z-shell"> push<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>force-with-lease</span> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">remote</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> HEAD:refs/heads/<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-expansion z-parameter z-begin z-shell">{</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-variable z-other z-readwrite z-shell">branch</span></span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-section z-expansion z-parameter z-end z-shell">}</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function z-shell"><span class="z-punctuation z-section z-braces z-end z-shell">}</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">main</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span><span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-variable z-language z-shell">@</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash">
+</span></code></pre>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

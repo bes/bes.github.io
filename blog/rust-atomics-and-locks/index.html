@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/rust-atomics-and-locks/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Book: Rust Atomics and Locks —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Book: Rust Atomics and Locks —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Book: Rust Atomics and Locks —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="Learning low level concurrency primitives through Rust! I read the book
+"Rust Atomics and Locks" by Mara Bos, and it helped me develop my understanding
+of, and build an intuition for, how atomics work in modern computers." />
+        <meta name="twitter:description" content="Learning low level concurrency primitives through Rust! I read the book
+"Rust Atomics and Locks" by Mara Bos, and it helped me develop my understanding
+of, and build an intuition for, how atomics work in modern computers.">
+        <meta property="og:description" content="Learning low level concurrency primitives through Rust! I read the book
+"Rust Atomics and Locks" by Mara Bos, and it helped me develop my understanding
+of, and build an intuition for, how atomics work in modern computers." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Book: Rust Atomics and Locks
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">23 July 2023 · reading time 10 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/programming/">programming</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/atomics/">atomics</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#audience">Audience</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#focus">Focus</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#problem-statement">Problem statement</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#atomics">Atomics</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#memory-ordering">Memory Ordering</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#what-if-we-don-t-use-atomics">What if we don&#x27;t use atomics?</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#fixing-it-using-atomic-variables-and-fences">Fixing it using atomic variables and fences</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#that-one-weird-paragraph">That one weird paragraph</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/rust-atomics-and-locks/#final-words">Final words</a>
+        </li>
+        
+    </ol>
+    
+
+<p>Learning low level concurrency primitives through Rust! I read the book
+"Rust Atomics and Locks" by Mara Bos, and it helped me develop my understanding
+of, and build an intuition for, how atomics work in modern computers.</p>
+<span id="continue-reading"></span>
+<p>First of all — I highly recommend buying (or borrowing) <a href="https://marabos.nl/atomics/">the book</a>.
+Buy locally if you can! <em>Support your local book dealers</em>.</p>
+<h1 id="audience">Audience</h1>
+<p>Developers that need a deeper understanding of the inner workings of our
+programs and machines.</p>
+<h1 id="focus">Focus</h1>
+<p>To me, the most interesting chapters of the book are <em>Chapter 2. Atomics</em> and
+<em>Chapter 3. Memory Ordering</em>. Other parts of the book build on these two
+chapters and show us how to create higher level primitives on top of atomics.</p>
+<h1 id="problem-statement">Problem statement</h1>
+<p>To build a standard library for Rust with useful multi-threading primitives like
+<a href="https://doc.rust-lang.org/std/sync/struct.Mutex.html">Mutex</a>, or third-party
+APIs like Tokio's <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.channel.html">Channel</a>,
+we need to have a means of building those primitives.</p>
+<p>Atomic operations are one of the necessary building blocks to achieve that.</p>
+<div class="aside">
+    <div class="aside-title"><p>Sidebar with my friend jonasdn</p>
+</div>
+    
+    
+    <p>It's completely possible to have a solid systems programming career without ever
+needing to know about memory ordering or atomics. But it doesn't hurt to know about
+them either — They're building blocks for the things that you do use.</p>
+<p>– <a href="https://mastodon.nu/@jonasdn">@jonasdn@mastodon.nu</a></p>
+
+    
+</div>
+<h1 id="atomics">Atomics</h1>
+<p>Atomics enable us to share information between threads in a <em>data race free</em> way.
+The tools we have in the toolbox are <em>atomic variables</em>, and <em>atomic fences</em>.</p>
+<p>Atomic variables are small — way too small to hold any significant amount of data.
+The maximum size of an atomic variable depends on the platform but can at least
+have the size of a pointer on that platform, meaning 64 bits for modern platforms
+like x86-64 or ARM64/AArch64.</p>
+<p>If you have an atomic variable, you can write to it from one thread, and the
+result will be visible to another thread at some (not too distant) time in the
+future, without further synchronization.</p>
+<p>The most important attribute of atomics is that it's possible to use them to order
+<em>other</em> instructions, meaning it's possible to know that <em>some other data</em> than the
+atomic variable itself is ready to read fully and correctly.</p>
+<h1 id="memory-ordering">Memory Ordering</h1>
+<p>To be able to achieve our goal of correctly and reliably sending data between
+threads we need to know <em>when</em> we're allowed to access that data. The term <em>when</em> inside
+a computer program, or even inside a computer, is a complicated thing to nail down.</p>
+<p>Compilers are <em>allowed to reorder instructions</em>, as long as the end result is the same.
+Rust, C, C++, etc. all have one or more optimization steps that reorder and combine
+different parts of your code in the name of performance. And that's a good thing,
+because otherwise our programs would be slow.</p>
+<p>Processors also reorder instructions — pipelined instructions stages, speculative
+execution, and other things end up reordering the actual instructions. This is done
+because CPUs often wait for things like RAM to be loaded into a cache line, and while
+it's doing that it can complete other instructions that are ready to execute.</p>
+<p>How do we bring order to this world? We need to have control over the chaos
+that are programs running on CPUs. We need to control in which order things
+happen. But we don't want too much control. That would slow down our programs — compilers
+and CPUs reorder instructions for a reason!</p>
+<h2 id="atomic-variables">Atomic variables</h2>
+<p>An atomic variable stores a small amount of data, and when you load from it or
+store to it, you need to specify a memory ordering flag.</p>
+<p>The memory orderings available in Rust are found in the
+<a href="https://doc.rust-lang.org/std/sync/atomic/enum.Ordering.html">Ordering</a> enum:</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-enum z-rust">enum</span> <span class="z-entity z-name z-enum z-rust">Ordering</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Weakest ordering guarantees
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    Relaxed<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    Release<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    Acquire<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    AcqRel<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Strongest ordering guarantees
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust">    SeqCst<span class="z-punctuation z-separator z-rust">,</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-enum z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+<p>The typical methods you will use on atomic variables are</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/sync/atomic/struct.AtomicBool.html#method.load">load</a> Loads a value from the variable</li>
+<li><a href="https://doc.rust-lang.org/std/sync/atomic/struct.AtomicBool.html#method.store">store</a> Stores a value to the variable</li>
+<li><a href="https://doc.rust-lang.org/std/sync/atomic/struct.AtomicBool.html#method.compare_exchange">compare_exchange</a>
+First checks if the value inside the variable is the expected one, and then replaces it if the check passes</li>
+</ul>
+<p>There's far more information available in the book, and in the Rust documentation.</p>
+<h3 id="relaxed-ordering">Relaxed ordering</h3>
+<p><code>Ordering::Relaxed</code> is the weakest ordering. This is useful when simply sharing
+data between threads inside the atomic variable, and is the most performant.</p>
+<p>Unfortunately <code>Ordering::Relaxed</code> can't be used to prevent the compiler or the processor
+from reordering instructions by itself. Using a Relaxed ordering only guarantees that once
+written, the value can be safely read from another thread.</p>
+<h3 id="release-acquire-ordering">Release &amp; Acquire ordering</h3>
+<p><code>Ordering::Release</code> is used to store into an atomic variable, and guarantees that
+any instructions before it on the same thread happen-before any instructions after
+an <code>Ordering::Acquire</code> load from that same atomic variable on another thread. But
+not without a few caveats —</p>
+<p>If you store into an atomic variable using the Release ordering, and then load
+that same variable on another thread using an Acquire ordering there is a guarantee
+that any instructions before the release-store happen-before any instructions
+after the acquire-load <strong>if and only if</strong>:</p>
+<ul>
+<li><em>The release-store is observed by the acquire-load</em> — example: if the acquire-load sees
+an AtomicBoolean change from false to true, and that is the expected precondition
+for another instruction to have happened, then the instructions of the release-store
+happen-before the acquire-load.</li>
+<li><em>The release-store was from the same thread as the instructions expected to have happened-before</em>
+— example: If two (or more) threads store into an atomic variable only one
+of the threads will have a happens-before relationship with the acquire-load,
+namely the thread that had its release-store observed by the acquire-load.</li>
+</ul>
+<p>The last rule means that if ten threads all release-store (write) to the same
+atomic variable, only one of them will have a happens-before relationship with
+the acquire-load (read), and only that one thread can be expected to have had
+all of its instructions ordered correctly. If we try to read memory written by
+any of the other threads at that point, that memory might be improperly written
+or synchronized leading to Undefined Behavior.</p>
+<h2 id="atomic-fences">Atomic fences</h2>
+<p>An atomic <a href="https://doc.rust-lang.org/std/sync/atomic/fn.fence.html">fence</a> is an
+operation that does not read or write any data itself, but can be used together
+with reading and writing to accomplish a certain ordering. One interesting property
+is that reading and writing can be done using <code>Ordering::Relaxed</code>, and it will still work.
+This is mostly useful if there are multiple atomic variables that need to be used
+together with a single fence. Another interesting property of an atomic fence is
+that it can be issued <em>conditionally</em>.</p>
+<p>In short: issuing a Release fence followed by a Relaxed store on one thread,
+then issuing a Relaxed load followed by an Acquire fence on another thread
+establishes a happens-before relationship between the fence instructions even
+though the actual store and the actual load were both Relaxed. This seemed
+counterintuitive to me when I read it. Especially the part where the store
+and the load happen between the fences instead of before/after them.</p>
+<p>The paragraphs in the <em>Rust Atomics and Locks</em> book covering atomic fences had
+me asking how fences were supposed to be used. It was all there, of course, but
+not clear enough for me to fully understand it without additional resources.
+Jeff Preshing's <a href="https://preshing.com/20130922/acquire-and-release-fences/">blog post</a>
+made it click. Have a look!</p>
+<h1 id="what-if-we-don-t-use-atomics">What if we don't use atomics?</h1>
+<p>Let's declare a shared mutable variable that we are going to use in a couple of
+examples.</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Have some globally modifiable data (unsafe)
+</span></span><span class="z-source z-rust"><span class="z-storage z-type z-rust">static</span> <span class="z-storage z-modifier z-rust">mut</span> <span class="z-constant z-other z-rust">GLOBAL_DATA</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-storage z-type z-rust">u128</span> <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">0</span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></code></pre>
+<p>Imagine starting two threads, writing data in one of them, and reading data from
+the other.</p>
+<p>Thread 1:</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Write some shared data using unsafe
+</span></span><span class="z-source z-rust"><span class="z-storage z-modifier z-rust">unsafe</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span> <span class="z-constant z-other z-rust">GLOBAL_DATA</span> <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">12345</span><span class="z-punctuation z-terminator z-rust">;</span> </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></code></pre>
+<p>Thread 2:</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> How long do we wait here before the data is readable?
+</span></span><span class="z-source z-rust"><span class="z-storage z-type z-rust">let</span> data <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-storage z-modifier z-rust">unsafe</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span> <span class="z-constant z-other z-rust">GLOBAL_DATA</span> </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> do something with data...
+</span></span></code></pre>
+<p>It's almost impossible to know how long to wait for the data to become available
+in the second thread. This is because it could be stuck in an L1 cache inside the
+CPU, a cache that may "never" be available to us since the threads can live on
+different CPU cores.</p>
+<h1 id="fixing-it-using-atomic-variables-and-fences">Fixing it using atomic variables and fences</h1>
+<p>Thread 1:</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Write some shared data using unsafe
+</span></span><span class="z-source z-rust"><span class="z-storage z-modifier z-rust">unsafe</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span> <span class="z-constant z-other z-rust">GLOBAL_DATA</span> <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-constant z-numeric z-integer z-decimal z-rust">12345</span><span class="z-punctuation z-terminator z-rust">;</span> </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Then issue a Release fence and a relaxed write
+</span></span><span class="z-source z-rust"><span class="z-meta z-path z-rust">atomic<span class="z-punctuation z-accessor z-rust">::</span></span>fence<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-path z-rust">Ordering<span class="z-punctuation z-accessor z-rust">::</span></span>Release</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">atomic_bool<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">store</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-language z-rust">true</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-meta z-path z-rust">Ordering<span class="z-punctuation z-accessor z-rust">::</span></span>Relaxed</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></code></pre>
+<p>Thread 2:</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Assume that this code is called often (in a loop?)
+</span></span><span class="z-source z-rust"><span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> At some point atomic_bool will flip to true in this thread
+</span></span><span class="z-source z-rust"><span class="z-keyword z-control z-rust">if</span> atomic_bool<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">load</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-path z-rust">Ordering<span class="z-punctuation z-accessor z-rust">::</span></span>Relaxed</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span><span class="z-source z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Since we issue an Acquire fence here _and_ we saw atomic_bool be true,
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> we can be sure that GLOBAL_DATA is safe to read after this fence.
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-path z-rust">atomic<span class="z-punctuation z-accessor z-rust">::</span></span>fence<span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-path z-rust">Ordering<span class="z-punctuation z-accessor z-rust">::</span></span>Acquire</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span><span class="z-source z-rust"><span class="z-meta z-block z-rust">    <span class="z-storage z-type z-rust">let</span> data <span class="z-keyword z-operator z-assignment z-rust">=</span> <span class="z-storage z-modifier z-rust">unsafe</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span> <span class="z-constant z-other z-rust">GLOBAL_DATA</span> </span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span><span class="z-source z-rust"><span class="z-meta z-block z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> do something with data...
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span>
+</span></code></pre>
+<p>Now we've made sure that the compiler isn't allowed to reorder the data write to
+<code>GLOBAL_DATA</code> to <em>after</em> the store of <code>true</code> to <code>atomic_bool</code>.</p>
+<p>And we've made sure that the read of the <code>GLOBAL_DATA</code> can't be reordered to before
+the load of <code>atomic_bool</code>.</p>
+<p>The <code>Ordering</code>s we use: <code>Acquire</code> and <code>Release</code>, in the exact places they're used
+not only makes sure that instructions can't be reordered by the compiler, they also
+inform the CPU to share or flush relevant cache lines (in L1, L2, etc.) in a way that
+makes the write to <code>GLOBAL_DATA</code> with <code>Release</code> visible to the next read of <code>GLOBAL_DATA</code>
+from the thread that executes the atomic <code>Acquire</code>.</p>
+<p>As I wrote in the <em>Atomics</em> section above, atomics is what you use to
+"order <em>other</em> instructions". Instructions that aren't protected by a Mutex, or
+data that can't fit inside an atomic variable itself. Typically, it's about fully
+and correctly writing to some shared memory from one thread, signalling that it's
+ready through atomic operations, and then reading that shared data from another
+thread.</p>
+<p>The <em>other</em> instruction in the example above is the write to the <code>GLOBAL_DATA</code> variable,
+which isn't atomic.</p>
+<p>It's important to get this right — reading data that isn't fully written is
+Undefined Behavior and at that point all bets are off!</p>
+<h1 id="that-one-weird-paragraph">That one weird paragraph</h1>
+<div class="note">
+    <div class="note-title">A quote from Rust Atomics and Locks: Chapter 3. Memory Ordering</div>
+    <p>The basic happens-before rule is that everything that happens within the same thread
+happens in order. If a thread is executing <code>f(); g();</code>, then <code>f();</code> <em>happens-before</em>
+<code>g()</code>.</p>
+
+</div>
+<p>I spent way too much time thinking about this paragraph in the book. As far as I
+can tell, function calls are allowed to be reordered, since most code can be
+reordered.</p>
+<p>What I think it means is that the observable effects in that thread at runtime
+are the same as if <code>f();</code> happened before <code>g();</code>, not that they were necessarily
+executed in that order in software or even in hardware.</p>
+<p>The point the book tries to make in the paragraphs after that is that happens-before
+relationships between threads only happen for certain types of operations, of
+which atomic variables and fences are two.</p>
+<h1 id="final-words">Final words</h1>
+<p>Use atomics to</p>
+<ul>
+<li>Send small amounts of data between threads directly inside an atomic variable</li>
+<li>Send large amounts of data between threads by creating happens-before relationships
+between instructions in different threads using atomic variables and atomic fences</li>
+</ul>
+<p>I can't stress enough how important the last point is — the capability to order
+<em>other</em> instructions than atomic instructions <em>between threads</em>, and use that to
+correctly synchronize data between them.</p>
+<p>Dig deeper by getting a copy of <a href="https://marabos.nl/atomics/">Rust Atomics and Locks</a> by Mara Bos.</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Segmenting my home network for defence in depth —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Segmenting my home network for defence in depth —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Segmenting my home network for defence in depth —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I generally know what's installed and running on my home computers, but I don't know
+what's running on managed devices like Zigbee temperature loggers, Sonos speakers,
+or Chromecasts. I finally managed to segment my home network into multiple VLANs
+to achieve defence in depth." />
+        <meta name="twitter:description" content="I generally know what's installed and running on my home computers, but I don't know
+what's running on managed devices like Zigbee temperature loggers, Sonos speakers,
+or Chromecasts. I finally managed to segment my home network into multiple VLANs
+to achieve defence in depth.">
+        <meta property="og:description" content="I generally know what's installed and running on my home computers, but I don't know
+what's running on managed devices like Zigbee temperature loggers, Sonos speakers,
+or Chromecasts. I finally managed to segment my home network into multiple VLANs
+to achieve defence in depth." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Segmenting my home network for defence in depth
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">14 July 2024 · reading time 7 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/networking/">networking</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/ubiquiti/">ubiquiti</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/dream-machine-pro/">dream machine pro</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/security/">security</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/#introduction">Introduction</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/#legacy-network-topology">Legacy network topology</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/#new-network-layout">New network layout</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/#moving-my-iot-devices-over-to-the-new-wifi-iot-ssid">Moving my IoT devices over to the new WiFi-IoT SSID</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/#future-improvements">Future improvements</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/segmenting-my-home-network-for-defence-in-depth/#references">References</a>
+        </li>
+        
+    </ol>
+    
+
+<p>I generally know what's installed and running on my home computers, but I don't know
+what's running on managed devices like Zigbee temperature loggers, Sonos speakers,
+or Chromecasts. I finally managed to segment my home network into multiple VLANs
+to achieve defence in depth<sup class="footnote-reference"><a href="#defence_in_depth">1</a></sup>.</p>
+<span id="continue-reading"></span><h1 id="introduction">Introduction</h1>
+<p>I use a
+<em>Dream Machine Pro</em> <sup class="footnote-reference"><a href="#dream_machine_pro">2</a></sup> as my router,
+which is mounted in a 19"/37U rack. I've always dreamed of having my own rack (weird?),
+and now I have one — which feels great. The next thing on my list of wants for my
+homelab is a 1U or 2U RISC-V server. We're probably a few years from being able to buy actually
+good RISC-V commodity servers though.</p>
+<p>When I got the Dream Machine Pro, I started out by creating a Guest network, but
+I hesitated creating an IoT network since I thought it would be a pain to
+move my devices over to the new network — and I was right, more on that later.
+The latest OpenSSH vulnerability, nicknamed regreSSHion<sup class="footnote-reference"><a href="#regresshion">3</a></sup>,
+was the last nail in the coffin for me. RegreSSHion isn't particularly related to
+rogue IoT devices, rather an increasing feeling of dread about how much bad C-code is running
+24/7 in my home.</p>
+<p>To get started, I needed some help, so I followed the steps in the excellent
+YouTube tutorial<sup class="footnote-reference"><a href="#crosstalk_yt">4</a></sup> by Crosstalk Solutions, but that
+video is from July 2021 — almost 3 years ago. It was relatively simple
+to follow along, it was just a matter of finding where Ubiquiti had moved things
+in their UI since then.</p>
+<p>When I told my friend Markus what I was doing, he joked that in 1999 his father
+had been right about the evil printer in their house and how it would spread
+viruses to their computer. After that I decided to move my printer into the IoT
+network, too.</p>
+<h1 id="legacy-network-topology">Legacy network topology</h1>
+<p>Before restructuring my network setup I had my Default network and one Guest
+network, with them being segmented like this. The Guest network has access to
+the internet, but can't access anything in the Default network. The Default
+network can't access anything in the Guest network either. This is handled by
+the Dream Machine Pro's "Guest network" feature, that can be set as an option
+when creating a network. No additional firewall configuration is necessary.</p>
+<div class="aside">
+    <div class="aside-title"><p>Initial network topology</p>
+</div>
+    
+    
+    <pre data-lang="txt" class="language-txt z-code"><code class="language-txt" data-lang="txt"><span class="z-text z-plain"> ᯤ WiFi                  ᯤ WiFi-Guest
+</span><span class="z-text z-plain">┌─────────────────┐     ┌─────────────────┐
+</span><span class="z-text z-plain">│ Default         │     │ Guest (VLAN2)   │
+</span><span class="z-text z-plain">│ 10.6.0.0/24     │     │ 192.168.1.0/24  │
+</span><span class="z-text z-plain">└────────┬────────┘     └─────┬───────────┘
+</span><span class="z-text z-plain">         │     ┌──────────┐   │
+</span><span class="z-text z-plain">         └────►│ Internet │◄──┘
+</span><span class="z-text z-plain">               └──────────┘
+</span></code></pre>
+
+    
+</div>
+<h1 id="new-network-layout">New network layout</h1>
+<p>After following the YouTube tutorial<sup class="footnote-reference"><a href="#crosstalk_yt">4</a></sup>, I ended up with the following
+topology:</p>
+<div class="aside">
+    <div class="aside-title"><p>New network topology</p>
+</div>
+    
+    
+    <pre data-lang="txt" class="language-txt z-code"><code class="language-txt" data-lang="txt"><span class="z-text z-plain"> ᯤ WiFi                  ᯤ WiFi-IoT              ᯤ WiFi-Guest
+</span><span class="z-text z-plain">┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+</span><span class="z-text z-plain">│ Default         ├────►│ IOT (VLAN3)     │     │ Guest (VLAN2)   │
+</span><span class="z-text z-plain">│ 10.6.0.0/24     │     │ 10.7.0.0/24     │     │ 192.168.1.0/24  │
+</span><span class="z-text z-plain">└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+</span><span class="z-text z-plain">         │                  ┌────▼─────┐                 │
+</span><span class="z-text z-plain">         └─────────────────►│ Internet │◄────────────────┘
+</span><span class="z-text z-plain">                            └──────────┘
+</span></code></pre>
+
+    
+</div>
+<p>Which, honestly, doesn't say much. I'll try to give a few details.</p>
+<p>The key thing is to not subnet yourself into a hole<sup class="footnote-reference"><a href="#jessfraz_subnet">5</a></sup> while doing this —
+in other words making sure that the VLAN you're in doesn't get firewalled in a
+way that makes it impossible to get out of without doing a factory reset on the router.</p>
+<h2 id="virtual-network-wifi">Virtual Network &amp; WiFi</h2>
+<p>The first step is to add a new VLAN. It can be added under
+Network &gt; Settings &gt; Networks. I called my network IOT and gave it the IP range
+10.7.0.0/24. My Default network already has 10.6.0.0/24 and my Guest network has
+192.168.1.0/24.</p>
+<p>Then I assigned a new WiFi SSID called WiFi-IoT and connected it to the IOT VLAN.</p>
+<h2 id="ip-groups">IP Groups</h2>
+<p>Time to create the following IP Groups, which can be done under
+Network &gt; Settings &gt; Profiles &gt; IP Groups.</p>
+<div class="hscroll">
+    <table><thead><tr><th>Name</th><th>Type</th><th>Settings</th></tr></thead><tbody>
+<tr><td>Local Network RFC1918</td><td>IPv4 Address/Subnet</td><td><ul><li>10.0.0.0/8</li><li>192.168.0.0/16</li><li>172.16.0.0/12</li></ul></td></tr>
+<tr><td>IoT to Other GW block</td><td>IPv4 Address/Subnet</td><td><ul><li>10.6.0.1</li><li>192.168.1.1</li></ul></td></tr>
+<tr><td>All GW Addresses</td><td>IPv4 Address/Subnet</td><td><ul><li>10.6.0.1</li><li>192.168.1.1</li><li>10.7.0.1</li></ul></td></tr>
+<tr><td>UDM-pro access ports</td><td>Port Group</td><td><ul><li>80</li><li>443</li><li>22</li></ul></td></tr>
+</tbody></table>
+
+</div>
+<h2 id="firewall-rules">Firewall rules</h2>
+<p>And then, the all-important firewall rules, which are configured under
+Network &gt; Settings &gt; Security &gt; Traffic &amp; Firewall Rules. All of these rules need to
+be marked "Before predefined".</p>
+<div class="hscroll">
+    <table><thead><tr><th>Name</th><th>Type</th><th>Action</th><th>Source</th><th>Destination</th><th>Match State</th></tr></thead><tbody>
+<tr><td>Allow established &amp; related</td><td>LAN In</td><td>Accept</td><td>Any</td><td>Any</td><td>MANUAL: Established, Related</td></tr>
+<tr><td>Allow Default to anywhere</td><td>LAN In</td><td>Accept</td><td>Network &gt; Default</td><td>Port/IP Group &gt; Local Network RFC1918</td><td>AUTO</td></tr>
+<tr><td>Block inter-VLAN traffic</td><td>LAN In</td><td>Drop</td><td>Port / IP Group &gt; Local Network RFC1918</td><td>Port/IP Group &gt; Local Network RFC1918</td><td>AUTO</td></tr>
+<tr><td>Block IoT To GW</td><td>LAN Local</td><td>Drop</td><td>Network &gt; IOT</td><td>Port/IP Group &gt; IoT to Other GW block</td><td>AUTO</td></tr>
+<tr><td>Block IoT from UDM-Pro access</td><td>LAN Local</td><td>Drop</td><td>Network &gt; IOT</td><td>Port/IP Group &gt; [Address Group] All GW Addresses, [Port Group] UDM-pro access ports</td><td>AUTO</td></tr>
+</tbody></table>
+
+</div>
+<p>The first rule, <em>Allow established &amp; related</em>, has to be the top / first one. It
+allows network connections to be established between the networks, and importantly
+it lets the IoT network connect back to the Default network once a device in the
+Default network has initiated a connection.</p>
+<p>The second rule, <em>Allow Default to anywhere</em>, lets the Default network talk to any
+local network in the RFC1918 address space.</p>
+<p>The third rule, <em>Block inter-VLAN traffic</em>, blocks all other inter-RFC1918 traffic.</p>
+<p>The fourth rule, <em>Block IoT To GW</em>, blocks the IoT network from accessing the gateway
+IP-addresses in the Default network and the Guest network.</p>
+<p>And lastly, The fifth rule, <em>Block IoT from UDM-Pro access</em>, blocks the IoT network
+from accessing the management interfaces on the router (ports 80, 443, and 22),
+without blocking it from accessing the gateway functionality it needs.
+The fourth rule already blocks the IoT network completely from the gateway interfaces on the
+Default network and the Guest network, so this technically only blocks it from
+the management ports on the IoT gateway, but the rule still prohibits the ports
+on all the gateways. Doing it like that prevents future changes from introducing
+mistakes — even though mistakes are still possible.</p>
+<div class="aside">
+    <div class="aside-title"><p>The firewall rules, working together</p>
+</div>
+    
+    
+    <pre data-lang="txt" class="language-txt z-code"><code class="language-txt" data-lang="txt"><span class="z-text z-plain"> ┌─────────────────┐       Connect: Allow        ┌─────────────────┐ 
+</span><span class="z-text z-plain"> │ Default         ├────────────────────────────►│ IoT             │ 
+</span><span class="z-text z-plain"> │ 10.6.0.0/24     │Response: Allow (Established)│ 10.7.0.0/24     │ 
+</span><span class="z-text z-plain"> │                 │◄────────────────────────────┤                 │ 
+</span><span class="z-text z-plain">---------------------------------------------------------------------
+</span><span class="z-text z-plain"> │                 │        Connect: Deny        │                 │ 
+</span><span class="z-text z-plain"> │                 │◄────────────────────────────┤                 │ 
+</span><span class="z-text z-plain"> └─────────────────┘                             └─────────────────┘ 
+</span></code></pre>
+<p>Established &amp; related connections are allowed, but unestablished or unrelated
+connections are denied. In the diagram we see communication between the Default
+network and the IoT network when the Default network initiates the connection.
+We also see that when the IoT network initiates a connection, and it is unestablished
+or unrelated, it is denied.</p>
+
+    
+</div>
+<h2 id="mdns-discovery">mDNS discovery</h2>
+<p>To get mDNS discovery working between the Default network and the IoT network,
+you need to set up "IoT Auto-Discovery" under
+Network &gt; Settings &gt; Networks &gt; Multicast Settings &gt; IoT Auto-Discovery, click
+edit and make sure the Default and IOT networks are both in the list.</p>
+<h1 id="moving-my-iot-devices-over-to-the-new-wifi-iot-ssid">Moving my IoT devices over to the new WiFi-IoT SSID</h1>
+<p>This was more painful than I had hoped it would be. More painful than it <em>needs</em> to be.
+I thought moving the Chromecast would be the easiest, then the Sonos and I honestly
+thought my Nedis Zigbee hub thing would be the most painful. Boy was I wrong!</p>
+<p>The Sonos and the Chromecast were absolutely terrible to move over. Required a
+total factory reset of both devices. Is this the level of configurability we
+should expect from billion-dollar companies? I wasted a lot of time trying to
+figure out how to move them over, but it seems like it simply isn't possible
+to change the SSID or password on those devices, once configured. Let me know
+if I'm wrong.</p>
+<p>The Nedis Zigbee thing was a breeze, took like 2 minutes. I guess that's the difference
+several billion dollars make.</p>
+<h1 id="future-improvements">Future improvements</h1>
+<p>One big thing would be to let the Guest network be able to access the IoT network
+to be able to use my Chromecasts, Sonos, etc. That would require me to stop
+using the convenient "Guest network" feature, but it shouldn't be too complicated
+to add the necessary firewall rules manually.</p>
+<h1 id="references">References</h1>
+<div class="footnote-definition" id="defence_in_depth"><sup class="footnote-definition-label">1</sup>
+<p>Defence in depth – <a href="https://en.wikipedia.org/wiki/Defense_in_depth_(computing)">https://en.wikipedia.org/wiki/Defense_in_depth_(computing)</a></p>
+</div>
+<div class="footnote-definition" id="dream_machine_pro"><sup class="footnote-definition-label">2</sup>
+<p>Dream Machine Pro – <a href="https://ubntwiki.com/products/unifi/unifi_dream_machine_pro">https://ubntwiki.com/products/unifi/unifi_dream_machine_pro</a></p>
+</div>
+<div class="footnote-definition" id="regresshion"><sup class="footnote-definition-label">3</sup>
+<p>RegreSSHion – <a href="https://en.wikipedia.org/wiki/RegreSSHion">https://en.wikipedia.org/wiki/RegreSSHion</a></p>
+</div>
+<div class="footnote-definition" id="crosstalk_yt"><sup class="footnote-definition-label">4</sup>
+<p>IoT Network Setup - UDM-Pro 2021 – <a href="https://youtu.be/UGBobTInIBc">https://youtu.be/UGBobTInIBc</a></p>
+</div>
+<div class="footnote-definition" id="jessfraz_subnet"><sup class="footnote-definition-label">5</sup>
+<p>Jessie Frazelle subnetting herself into a hole. This was fun at the time (2017) and I still remember it. The tweet is gone, though. <a href="https://blog.jessfraz.com/post/home-lab-is-the-dopest-lab/">https://blog.jessfraz.com/post/home-lab-is-the-dopest-lab/</a></p>
+</div>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

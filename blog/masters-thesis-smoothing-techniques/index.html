@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/masters-thesis-smoothing-techniques/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Supervising the Master&#x27;s Thesis &quot;Smoothing techniques for 3D animated human pose estimation data&quot; —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Supervising the Master&#x27;s Thesis &quot;Smoothing techniques for 3D animated human pose estimation data&quot; —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Supervising the Master&#x27;s Thesis &quot;Smoothing techniques for 3D animated human pose estimation data&quot; —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="During the spring of 2024, August Bergöö and Oliver Lundgren have been working on their
+Master's Thesis titled "Smoothing techniques for 3D animated human pose estimation data"
+at Lunds Tekniska Högskola. I have been one of their supervisors at
+Spiideo during this time.
+I want to take a moment and find out what their experience was like. I also
+want to know if there is anything I could do better next time." />
+        <meta name="twitter:description" content="During the spring of 2024, August Bergöö and Oliver Lundgren have been working on their
+Master's Thesis titled "Smoothing techniques for 3D animated human pose estimation data"
+at Lunds Tekniska Högskola. I have been one of their supervisors at
+Spiideo during this time.
+I want to take a moment and find out what their experience was like. I also
+want to know if there is anything I could do better next time.">
+        <meta property="og:description" content="During the spring of 2024, August Bergöö and Oliver Lundgren have been working on their
+Master's Thesis titled "Smoothing techniques for 3D animated human pose estimation data"
+at Lunds Tekniska Högskola. I have been one of their supervisors at
+Spiideo during this time.
+I want to take a moment and find out what their experience was like. I also
+want to know if there is anything I could do better next time." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Supervising the Master&#x27;s Thesis &quot;Smoothing techniques for 3D animated human pose estimation data&quot;
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">13 June 2024 · reading time 6 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/computer-science/">computer science</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/thesis/">thesis</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/lth/">lth</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/masters-thesis-smoothing-techniques/#summary-of-the-thesis-and-results">Summary of the thesis and results</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/masters-thesis-smoothing-techniques/#three-questions">Three questions</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/masters-thesis-smoothing-techniques/#closing-thoughts">Closing thoughts</a>
+        </li>
+        
+    </ol>
+    
+
+<p>During the spring of 2024, August Bergöö and Oliver Lundgren have been working on their
+Master's Thesis titled "Smoothing techniques for 3D animated human pose estimation data"
+at Lunds Tekniska Högskola. I have been one of their supervisors at
+<a href="https://www.spiideo.com">Spiideo</a> during this time.
+I want to take a moment and find out what their experience was like. I also
+want to know if there is anything I could do better next time.</p>
+<span id="continue-reading"></span>
+<p>It was a pleasure to supervise August and Oliver. They're two competent
+people, and they have complementary strengths which made them self going
+to a large extent.</p>
+<p>August and Oliver had two additional supervisors, <a href="https://www.linkedin.com/in/h%C3%A5kan-ard%C3%B6-3b38483/">Håkan Ardö</a> from Spiideo
+and <a href="https://www.linkedin.com/in/magnus-oskarsson-a7873b1/">Magnus Oskarsson</a> from Lunds Tekniska Högskola.
+They did a great job supervising the thesis, and their contributions were undoubtedly much more
+important than mine.</p>
+<h1 id="summary-of-the-thesis-and-results">Summary of the thesis and results</h1>
+<p>In their thesis,
+<a href="https://www.linkedin.com/in/august-berg%C3%B6%C3%B6-031bb3263/">August</a> and
+<a href="https://www.linkedin.com/in/oliver-lundgren-6a3798197/">Oliver</a>
+study smoothing techniques for 3D models that contain jitter and unnatural movements.
+They look at filters (B-splines, Savitzky-Golay, Double Exponential Smoothing),
+and machine learning techniques and evaluate those against each other using
+quantitative and qualitative analysis.</p>
+<p>Human representations in 3D created by motion capture or AI/ML models can contain
+jitter and unnatural poses:</p>
+<blockquote>
+<p>  Often these estimations of human poses contain noise, either in the form of
+small inaccuracies that result in jittering character models, or errors in the estimation
+which lead to limbs of the player models being represented poorly. The latter can
+cause phenomena which make the experience feel unrealistic, such as feet sliding
+on the floor or arms clipping through the body in unnatural ways.</p>
+<p>  The focus of this work will be to use different techniques to mitigate the effects
+of this noise.</p>
+</blockquote>
+<p>To evaluate the different techniques the <a href="https://bedlam.is.tue.mpg.de/">BEDLAM</a>
+data set (A Synthetic Dataset of Bodies Exhibiting Detailed Lifelike Animated Motion)
+was used. Noise was applied to the data, and finally different smoothing techniques
+were used.</p>
+<div class="aside">
+    <div class="aside-title"><p>Jitterbugs</p>
+</div>
+    
+    <a class="image" href=".&#x2F;characters.png">
+        <img src=".&#x2F;characters.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+    <p>These ladies were made to contort unnaturally, and to jitter. Then different
+smoothing techniques were applied. Visualized in the thesis using
+<a href="https://bevyengine.org/">Bevy</a>.</p>
+
+    
+</div>
+<p>To visualize the results, and to do various data manipulation tasks, the
+<a href="https://bevyengine.org/">Bevy</a> game engine was used. For the AI/ML tasks,
+<a href="https://pytorch.org/">PyTorch</a> was used.</p>
+<p>Two measurement methods, Mean Per Joint Position Error (MPJPE)
+[Wang et al., 2021] and Absolute Acceleration Error (AAE) [Shao et al., 2023] were
+selected for the quantitative study. For MPJPE B-Spline filtering worked best,
+and for AAE Savitzky-Golay filtering worked best.</p>
+<p>The LSTM (ML) model wasn't without benefits though:</p>
+<blockquote>
+<p>  The LSTM predictions generally did a better job filtering out pose errors created by
+our noise model, but worse in filtering out the high frequency noise like jitter. The
+classic filters on the other hand, were much better at reducing these errors whilst
+ignoring the pose errors. It would be of interest to combine the methods used in the
+thesis, to see if there is a way to create a combined solution that the effective at
+solving both types of issues.</p>
+</blockquote>
+<h1 id="three-questions">Three questions</h1>
+<p>I asked August and Oliver three questions: Insights you had, improvements you
+would do if you had to do it again, and finally I asked them to let me know what
+I could do better in the form of advice.</p>
+<p>Oliver graciously answered these questions on behalf of both of them.</p>
+<h2 id="insights">Insights</h2>
+<p>Other than getting the title of Master of Science, what are you taking with you
+that you learned while doing the thesis work?</p>
+<div class="quote">
+    <p>This is the first time I have worked on a project of this size, so it was much more important
+to have a clear structure and plan, documenting what we are doing and why.
+This way, both partners had a clear idea of what needed to be done and what was in progress.
+Learning to use BEVY’s Entity Component System was a lot of fun. Most of my programming
+projects have been object-oriented, so the shift in how to think and build our program was incredibly
+interesting.</p>
+
+    <div class="quote-title">Oliver</div>
+</div>
+<h2 id="improvements">Improvements</h2>
+<p>If you could do it again, what would you do differently?</p>
+<div class="quote">
+    <p>The first few weeks were the hardest. We felt like we didn’t have a clear direction
+of what we wanted to do and what the subject of our thesis was going to be.
+We thought we had a plan, but once we started, we soon realized that the initial
+subject wasn’t right for us. If I could do it again, I would want to be much
+more certain about our research focus to avoid having to switch directions after
+starting. Now, after writing the actual thesis, we have a lot more knowledge of
+the real issues in this field. If we were to redo the same thesis, our noise
+estimations would be more precise and accurate, resulting in a more interesting outcome.</p>
+
+    <div class="quote-title">Oliver</div>
+</div>
+<h2 id="advice-to-the-supervisor">Advice to the supervisor</h2>
+<p>If you could give any advice to me as your supervisor, what would it be?</p>
+<div class="quote">
+    <p>I felt like we were very happy with both our supervisors. Especially after a
+couple of months when it felt like we got to know you better outside of just
+thesis meetings. At the start, at least for me, I was worried that I might not
+live up to your expectations. It was difficult to gauge your thoughts and opinions
+since our meetings were, as they should be, very serious and focused. But as you
+occasionally came around to our part of the office and talked about things other
+than the thesis, we started to get to know you better. This eventually led to me
+understanding that my worries were mostly unfounded, and I really started to enjoy
+this "relationship." So, if there was one thing you could have done differently, it
+would be to come by a bit more frequently. At least at the beginning, so we could have
+gotten to know you faster. I know all the thesis workers really enjoyed those moments.</p>
+
+    <div class="quote-title">Oliver</div>
+</div>
+<h1 id="closing-thoughts">Closing thoughts</h1>
+<p>Two years ago I supervised <a href="https://www.linkedin.com/in/gustav-sj%C3%B6lin-757a84162/">Gustav Sjölin</a>
+and <a href="https://www.linkedin.com/in/daniel-pendse-a0699a15b/">Daniel Pendse</a> during
+Covid lockdown, which was a lot of fun for me because lockdown was kind of depressing.<br />
+Some day I might write a little about that experience, and ask them some questions
+too.</p>
+<p>I had a lot of fun supervising August and Oliver. It was quite different from
+the time I spent online with Gustav and Daniel, and maybe because of that I neglected
+my social responsibilities with August and Oliver. I appreciate the feedback, and I
+promise that I'll do better with the next batch of students.</p>
+<p>I'm happy all of their anguish was put to an end when their thesis presentation
+was over and their thesis was approved, which looked like this:</p>
+<a class="image" href=".&#x2F;a_o.jpg">
+    <img src=".&#x2F;a_o.jpg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Good luck in the future guys!</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

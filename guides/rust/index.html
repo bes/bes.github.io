@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/guides/rust/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Guide: Rust resources —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Guide: Rust resources —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Guide: Rust resources —&nbsp;Domain Specific Language" />
+    
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article class="post">
+    
+    <header>
+        <h1>Guide: Rust resources</h1>
+    </header>
+    
+    <div class="content">
+        <p>The following resources can help you build intuition and understanding, at least
+they did for me. I found them to be so interesting that I made a note of them
+and several years later I'm still thinking about and revisiting most of these
+resources.</p>
+<p>Last updated 2024-10-09.</p>
+<h1 id="beginner-content">Beginner content</h1>
+<p>The first thing you need to do is to read <a href="https://doc.rust-lang.org/book/">The Book</a>.
+Maybe you read it cover-to-cover, maybe you jump around. Whatever works best for you.</p>
+<p><a href="http://sled.rs/errors">Error Handling in a Correctness-Critical Rust Project</a>
+Intimidating title, but should be quite approachable after reading <em>The Book</em></p>
+<h2 id="beginner-books">Beginner books</h2>
+<p>Books — I really think reading a physical book can help with focus, and I
+recommend the following books (I only recommend books I have read or own myself):</p>
+<ul>
+<li><a href="https://www.manning.com/books/rust-in-action">Rust in Action</a> for an introduction to systems programming.</li>
+<li><a href="https://www.oreilly.com/library/view/programming-rust-2nd/9781492052586/">Programming Rust, 2nd Edition</a> for a comprehensive alternative to <em>The Book</em>.</li>
+<li><a href="https://pragprog.com/titles/hwrust/hands-on-rust/">Hands-on Rust</a> A fun and to-the-point book about 2D game programming.</li>
+</ul>
+<p>I wasn't sure if I should put <a href="https://pitdicker.github.io/Interior-mutability-patterns/">Interior Mutabilty Patterns</a>
+in the beginner or Intermediate section, but here it is. It goes through a
+number of examples of how to change a <code>struct</code> without it being <code>mut</code>able.
+Weird and upsetting.</p>
+<h1 id="intermediate-content">Intermediate content</h1>
+<p><a href="https://github.com/pretzelhammer/rust-blog/blob/master/posts/common-rust-lifetime-misconceptions.md">Common Rust Lifetime Misconceptions</a>
+teaches lifetimes, but also contains a lot of wisdom around generic
+types and how they relate to references of those types. Read it when you feel
+comfortable with references and generics in Rust.</p>
+<p><a href="https://docs.rs/dtolnay/latest/dtolnay/macro._02__reference_types.html">_02__reference_types</a>
+in which <code>&amp;</code> references are called shared references, and <code>&amp;mut</code> references are
+called exclusive references.</p>
+<p><a href="https://ryhl.io/blog/actors-with-tokio/">Actors with Tokio</a> goes through the motions
+of setting up Actors, as well as some pitfalls to avoid.</p>
+<p><a href="https://h2co3.github.io/pattern/">Patterns Are Not Expressions</a> — the title says it all really,
+but you'll have to read it to really get it. I can't explain it with just a paragraph.</p>
+<p><a href="https://github.com/QuineDot/rust-snags">Rust snags</a> a list of gotchas that you may run into when your
+code gets sufficiently advanced.</p>
+<p><a href="https://quinedot.github.io/rust-learning/dyn-trait.html">A tour of dyn Trait</a> guides you through the nature
+of <code>dyn Trait</code> and all the corner cases.</p>
+<p><a href="https://tomaka.medium.com/a-look-back-at-asynchronous-rust-d54d63934a1c">A look back at asynchronous Rust</a>
+is kind of a weird document to include, because it mainly focuses on the
+shortcomings of some async patterns. It taught me some stuff I had never seen
+before (how to use <code>select!</code> properly), as well as what to watch out for
+(watch out for unwittingly cancelled <code>Future</code>s!).</p>
+<h2 id="intermediate-books">Intermediate books</h2>
+<ul>
+<li><a href="https://nostarch.com/rust-rustaceans">Rust for Rustaceans</a> A nice book for Intermediate Rust programmers. Not
+many code examples, but rather discussions and explanations of concepts and
+details.</li>
+<li><a href="https://marabos.nl/atomics/">Rust Atomics and Locks</a> will teach you about memory ordering, happens-before
+relationships, how to keep data safe between threads using atomics, and more.
+This could also have ended up in the advanced category because atomics is something
+you'll reach for very late in your programming journey. The book itself is very
+approachable and recommended to anyone. I wrote
+<a href="https://zkc.se/blog/rust-atomics-and-locks/">a blog post</a> about the book too.</li>
+</ul>
+<h1 id="advanced-content">Advanced content</h1>
+<p>This is where the fun stuff starts happening. Even if I know I won't be doing
+much of this stuff, it's very interesting and exciting.</p>
+<p><a href="https://doc.rust-lang.org/nomicon/">The Rustnomicon</a> is a book that you need
+to study to understand <code>unsafe</code> Rust.</p>
+<p><a href="https://ferrous-systems.com/blog/zero-sized-references/">Zero Sized References</a>
+is an intriguing look into how to manage resource in memory-constrained environments
+such as embedded systems by relying on <em>Zero Sized Types</em> (ZST) which only exist
+at compile time.</p>
+<p><a href="http://troubles.md/abusing-rustc/">Inviting God's Wrath with Cursed Rust</a> guides
+us through optimizations to <code>std::borrow::Cow&lt;T&gt;</code> by reducing the amount of memory
+used.</p>
+<h1 id="uncategorized">Uncategorized</h1>
+<p>I highly recommend looking through <a href="https://cheats.rs/">Rust Language Cheat Sheet</a>.</p>
+<h2 id="q-a">Q&amp;A</h2>
+<p>These are mostly links to <a href="https://users.rust-lang.org">URLO (users.rust-lang.org)</a>,
+which contain (mostly interesting) questions, but
+the answers are where the real magic is. You'll see the same names and avatars
+answering many of these, and if you have any questions you want an answer to,
+there is a good chance that the answer can be found on URLO. If you can't find
+the answer to your question there... Just ask, everyone is helpful and friendly.</p>
+<p>Here are some questions &amp; answers I have bookmarked because they're quite eye-opening
+the first time you read them.</p>
+<ul>
+<li><a href="https://users.rust-lang.org/t/what-is-the-meaning-of-for-a/55929">What is the meaning of for&lt;’a&gt;</a></li>
+<li><a href="https://users.rust-lang.org/t/function-parameter-v-mut-t-or-mut-v-t/62410">Function parameter: <code>v: &amp;mut T</code> or <code>&amp;mut v: T</code></a></li>
+<li><a href="https://users.rust-lang.org/t/problems-with-attempts-at-type-erasure-using-boxes/62443">Problems with Attempts at Type Erasure using Boxes</a></li>
+<li><a href="https://users.rust-lang.org/t/how-to-become-a-rust-ninja/64085">How to become a Rust ninja?</a></li>
+<li><a href="https://users.rust-lang.org/t/whats-your-recommended-path-to-wrap-your-head-around-the-entirety-of-rusts-capabilities/64283">What’s your recommended path to wrap your head around the entirety of Rust’s capabilities?</a></li>
+<li><a href="https://users.rust-lang.org/t/what-does-this-do-in-rust/72052">What does this “*” do in rust</a></li>
+</ul>
+<h2 id="blogs">Blogs</h2>
+<ul>
+<li>This Week in Rust: <a href="https://this-week-in-rust.org/">Blog</a> - <a href="https://mastodon.social/@thisweekinrust">Mastodon</a></li>
+<li>Gankra: <a href="https://faultlore.com/blah/">Blog</a> - <a href="https://toot.cat/@Gankra">Mastodon</a>.</li>
+<li>Mara Bos: <a href="https://blog.m-ou.se/">Blog</a> - <a href="https://hachyderm.io/@Mara">Mastodon</a></li>
+<li>Yoshua Wuyts - <a href="https://blog.yoshuawuyts.com/">Blog</a> - <a href="https://toot.yosh.is/@yosh">Mastodon</a></li>
+<li>Nick Cameron: <a href="https://www.ncameron.org/blog/">Blog</a> - <a href="https://hachyderm.io/@nrc">Mastodon</a></li>
+<li>Nicholas Nethercote: <a href="https://nnethercote.github.io/">Blog</a> - <a href="https://mas.to/@nnethercote">Mastodon</a></li>
+<li>Niko Matsakis: <a href="https://smallcultfollowing.com/babysteps/">Blog</a></li>
+<li>Alice Ryhl: <a href="https://ryhl.io/">Blog</a></li>
+<li>Fasterthanlime: <a href="https://fasterthanli.me/">Blog</a> - <a href="https://hachyderm.io/@fasterthanlime">Mastodon</a></li>
+<li>Llogiq: <a href="https://llogiq.github.io/">Blog</a></li>
+<li>matklad: <a href="https://matklad.github.io/">Blog</a></li>
+<li>Pascal (killercup): <a href="https://deterministic.space/">Blog</a> - <a href="https://mastodon.social/@killercup">Mastodon</a></li>
+<li>Ralf Jung: <a href="https://www.ralfj.de/blog/">Blog</a></li>
+<li>Raph Levien: <a href="https://raphlinus.github.io/">Blog</a> - <a href="https://mastodon.online/@raph">Mastodon</a></li>
+<li>It's all about the bit: <a href="https://itsallaboutthebit.com/">Blog</a></li>
+<li>mcyoung: <a href="https://mcyoung.xyz/">Blog</a></li>
+<li>TROUBLES.MD: <a href="http://troubles.md/">Blog</a></li>
+<li>Ferrous Systems: <a href="https://ferrous-systems.com/blog/">Blog</a></li>
+</ul>
+<h2 id="videos">Videos</h2>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLqbS7AVVErFiWDOAVrPt7aYmnuuOLYvOa">Crust of Rust</a></li>
+<li><a href="https://www.youtube.com/c/fasterthanlime/videos">Fasterthanlime</a></li>
+</ul>
+<h2 id="podcasts">Podcasts</h2>
+<ul>
+<li><a href="https://sdr-podcast.com/">Self-Directed Research</a> Every week, a new presentation on what Amos or James has been up to.</li>
+<li><a href="https://timclicks.dev/podcasts/compose">Compose</a> Interviews.</li>
+<li><a href="https://rustacean-station.org/">Rustacean Station</a> Interviews and "What's new in Rust".</li>
+<li><a href="https://newrustacean.com/">New Rustacean</a> Great podcast for <em>learning</em> Rust, as opposed to the other
+podcasts where you learn <em>about</em> Rust. (Completed. No new content)</li>
+<li><a href="https://oxide.computer/podcasts/oxide-and-friends">Oxide and Friends</a> Rust <em>adjacent</em> content - very interesting.</li>
+<li><a href="https://rustgamedev.com/">Rust Game Dev</a> Interviews and content for Rust game development.</li>
+<li><a href="https://jamesmunns.com/podcast/">Chats with James</a> Interviews.</li>
+<li><a href="https://anchor.fm/building-with-rust">Building with Rust</a> Interviews.</li>
+<li><a href="https://soundcloud.com/arewepodcastyet">Are we podcast yet?</a> Interviews.</li>
+<li><a href="https://request-for-explanation.github.io/podcast/">Request For Explanation</a> (Completed. No new content)</li>
+<li><a href="https://pca.st/maOV">The Yak Shave</a> (Completed. No new content)</li>
+</ul>
+
+    </div>
+</article>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

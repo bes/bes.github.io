@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/computer-architecture/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Computer architecture for developers —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Computer architecture for developers —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Computer architecture for developers —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="An adaption of a talk I gave at work aimed at raising awareness of, and interest in,
+computer architecture. The intended audience has low to no knowledge of computer
+architecture, but hopefully anyone can enjoy it." />
+        <meta name="twitter:description" content="An adaption of a talk I gave at work aimed at raising awareness of, and interest in,
+computer architecture. The intended audience has low to no knowledge of computer
+architecture, but hopefully anyone can enjoy it.">
+        <meta property="og:description" content="An adaption of a talk I gave at work aimed at raising awareness of, and interest in,
+computer architecture. The intended audience has low to no knowledge of computer
+architecture, but hopefully anyone can enjoy it." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Computer architecture for developers
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date"> 4 November 2022 · reading time 14 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/typescript/">typescript</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/programming/">programming</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/computer-architecture/#act-one-why-do-we-need-computers">Act one - why do we need computers?</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/computer-architecture/#act-two-why-do-we-need-to-know-how-computers-work">Act two - Why do we need to know how computers work?</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/computer-architecture/#act-three-explaining-fast-software">Act three - Explaining fast software</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/computer-architecture/#epilogue">Epilogue</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/computer-architecture/#references">References</a>
+        </li>
+        
+    </ol>
+    
+
+<p>An adaption of a talk I gave at work aimed at raising awareness of, and interest in,
+computer architecture. The intended audience has low to no knowledge of computer
+architecture, but hopefully anyone can enjoy it.</p>
+<span id="continue-reading"></span><div class="note">
+    <div class="note-title">A note on accessiblity</div>
+    <p>This article contains a lot of images. I have tried to make the article
+accessible by explaining most things in text, so you wouldn't necessarily
+need the images, they're mostly there for flair. If there are accessibility
+problems though, please let me know.</p>
+
+</div>
+<h1 id="act-one-why-do-we-need-computers">Act one - why do we need computers?</h1>
+<p>I guess it all starts with nonsense like "what is 1 + 1?". Many people throughout
+history have asked questions like that, and most settled for pen and paper —
+sensible, efficient. But just like a kid's dinosaur you eventually replace it
+with something more exciting (like complex numbers, perhaps?) and someone needs
+to be there to pick up the slack.</p>
+<p>A half adder is at least as sensible as pen and paper for calculating 1 + 1,
+so people started using half adders. Half adders can be built by wiring together
+an XOR gate and an AND gate, yielding two inputs (A, B) and two outputs (Sum, Carry).</p>
+<a class="image" href=".&#x2F;0001_gate.svg">
+    <img src=".&#x2F;0001_gate.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>A half adder has a truth table that looks like this</p>
+<div class="hscroll">
+    <table><thead><tr><th>input A</th><th>input B</th><th>output Sum</th><th>output Carry</th></tr></thead><tbody>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+</tbody></table>
+
+</div>
+<p>That worked for a while, but wiring up half adders all day gets old fast.
+"And nobody liked that", as it were. Long story short: that's why we invented
+assembly language.</p>
+<a class="image" href=".&#x2F;0002_nasm.svg">
+    <img src=".&#x2F;0002_nasm.svg" style="width: 100%; object-fit: cover;" />
+</a><pre data-lang="asm" class="language-asm z-code"><code class="language-asm" data-lang="asm"><span class="z-source z-assembly"><span class="z-keyword z-control z-assembly">mov</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">ax</span><span class="z-source z-assembly">,</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">1</span>
+</span><span class="z-source z-assembly"><span class="z-keyword z-control z-assembly">mov</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">bx</span><span class="z-source z-assembly">,</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">1</span>
+</span><span class="z-source z-assembly"><span class="z-keyword z-control z-assembly">add</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">ax</span><span class="z-source z-assembly">,</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">bx</span>
+</span></code></pre>
+<p>This is assembly language in nasm form. <code>mov ax, 1</code> means put the number 1 in
+register <code>ax</code>, basically <code>let ax = 1;</code> in pseudocode. <code>add ax, bx</code> on the last
+line adds the numbers together
+and puts the result in the first register. Writing it as pseudocode would yield
+something like <code>let ax = ax + bx;</code>.</p>
+<p><a href="https://www.nasm.us/">nasm</a> is an x86 assembler, and it's the nasm syntax I have
+used above. Check it out, it's pretty cool.</p>
+<p>The nasm compiler compiles assembly code into x86 machine code, and we'll have a
+peek at what that looks like and what kind of conclusions can be drawn, but first
+we'll take a quick look at hexadecimal notation.</p>
+<a class="image" href=".&#x2F;0003_hexadecimal.svg">
+    <img src=".&#x2F;0003_hexadecimal.svg" style="width: 100%; object-fit: cover;" />
+</a><div class="hscroll">
+    <table><thead><tr><th>Decimal</th><th>Hex</th><th>Binary</th></tr></thead><tbody>
+<tr><td>0</td><td>0</td><td>0000</td></tr>
+<tr><td>1</td><td>1</td><td>0001</td></tr>
+<tr><td>...</td><td>...</td><td>...</td></tr>
+<tr><td>10</td><td>a</td><td>1010</td></tr>
+<tr><td>11</td><td>b</td><td>1011</td></tr>
+<tr><td>...</td><td>...</td><td>...</td></tr>
+<tr><td>15</td><td>f</td><td>1111</td></tr>
+</tbody></table>
+
+</div>
+<p>The first column shows a decimal number 0 to 15, the second column would be the
+corresponding hexadecimal number and the last column is the binary equivalent.
+A lot of rows were skipped 😇.</p>
+<p>Now that we've at least seen some hexadecimal we can convert our assembly code
+into something called machine code by compiling it using the nasm compiler which
+turns it into x86 machine code.</p>
+<a class="image" href=".&#x2F;0004_machine_code_1.svg">
+    <img src=".&#x2F;0004_machine_code_1.svg" style="width: 100%; object-fit: cover;" />
+</a><pre data-lang="asm" class="language-asm z-code"><code class="language-asm" data-lang="asm"><span class="z-source z-assembly"><span class="z-entity z-name z-function z-assembly">#</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-keyword z-control z-assembly">mov</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">ax</span><span class="z-source z-assembly">,</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">1</span>
+</span><span class="z-source z-assembly"><span class="z-entity z-name z-function z-assembly">b</span><span class="z-entity z-name z-function z-assembly">8</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">01</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">00</span>
+</span><span class="z-source z-assembly"><span class="z-entity z-name z-function z-assembly">#</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-keyword z-control z-assembly">mov</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">bx</span><span class="z-source z-assembly">,</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">1</span>
+</span><span class="z-source z-assembly"><span class="z-entity z-name z-function z-assembly">b</span><span class="z-entity z-name z-function z-assembly">b</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">01</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-constant z-character z-decimal z-assembly">00</span>
+</span><span class="z-source z-assembly"><span class="z-entity z-name z-function z-assembly">#</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-keyword z-control z-assembly">add</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">ax</span><span class="z-source z-assembly">,</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-variable z-parameter z-register z-assembly">bx</span>
+</span><span class="z-source z-assembly"><span class="z-constant z-character z-decimal z-assembly">01</span><span class="z-entity z-name z-function z-assembly"> </span><span class="z-entity z-name z-function z-assembly">d</span><span class="z-entity z-name z-function z-assembly">8</span>
+</span></code></pre>
+<p>The first thing we see in the compiled x86 machine code is that each textual
+instruction has been converted into a sequence of bytes.</p>
+<p>As an aside, I can mention that x86 instructions are stored as little endian.</p>
+<p>Little endian is one of two ways of storing or transmitting bytes in a computer
+or over a computer network. The other way would be big endian. Every byte of a
+given sequence of bytes would be stored with the "little number at the lowest byte" in
+little endian, so a number like <code>0x0A0B0C0D</code> would have its last byte (meaning
+last when reading from left to right, the least significant byte, or the byte with
+the least "important" information: <code>0x0D</code>) stored at the
+lowest memory address, with each consecutive byte being stored at a higher address.
+Read the <a href="https://en.wikipedia.org/wiki/Endianness">endiannesss</a> article on wikipedia
+if you want to do a deep-dive.</p>
+<p>I personally think that the terms little-endian and big-endian are extremely
+confusing and I have to look them up every time. Another bad computer science /
+programming name is <code>.filter()</code> for arrays, which should really have been called
+<code>.keep()</code>.</p>
+<p>Let's look a little closer at the machine code.</p>
+<a class="image" href=".&#x2F;0005_machine_code_2.svg">
+    <img src=".&#x2F;0005_machine_code_2.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The leftmost column is a byte called opcode. The opcode tells the CPU what
+we want it to do. <code>b8</code> would mean <code>mov</code> data into the register <code>ax</code>.
+<code>bb</code> on the other hand means <code>mov</code> data into the register <code>bx</code>.
+The data columns for the first two lines both hold the number 1 in little endian.</p>
+<p>The third line is a little more interesting because it's the opcode <code>01</code> which
+is <code>add</code>, but it only takes a single byte argument. That byte needs to be split
+into three parts: The first two bits signify what the next six bytes represent.
+<code>11</code> means both of the coming three bit sequences are registers, <code>011</code> means <code>bx</code>
+and <code>000</code> means <code>ax</code>.</p>
+<p>But what would it look like if we turned all of these hexadecimal machine code
+instructions into binary numbers instead?</p>
+<a class="image" href=".&#x2F;0006_machine_code_3.svg">
+    <img src=".&#x2F;0006_machine_code_3.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>I'd say that looks a bit like the inputs to the half adder we studied above, just
+a teeny tiny bit more complex.</p>
+<p>Maybe you already knew, but...</p>
+<a class="image" href=".&#x2F;0007_machine_code_4.svg">
+    <img src=".&#x2F;0007_machine_code_4.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>machine code is generally independent of the host operating system of your
+computer. If you have an x86 mac, x86 windows, or x86 linux computer then most of the
+instructions inside a program would be the same no matter the platform.
+Only the code talking to the operating system would differ significantly.</p>
+<p>But we were talking about adding numbers, weren't we? For a long time people
+were writing computer programs in assembly language to perform complex tasks
+like putting people on the moon.</p>
+<a class="image" href=".&#x2F;0008_several_million_years_later.svg">
+    <img src=".&#x2F;0008_several_million_years_later.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>And for a long time that was the best way to do it.</p>
+<a class="image" href=".&#x2F;0009_c_programming.svg">
+    <img src=".&#x2F;0009_c_programming.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>But later scientist discovered another way to add numbers together. Unfortunately
+that method was the C programming language, which I hope most modern number adder
+people will shy away from  like the plague.</p>
+<p>C is... a (not very good) language but has found a niche together with C++ as unreliable,
+unsafe, but very fast number adders. But there are a lot of number adder languages
+out there, and some of them can be laid out on the Garbage Collected (GC)/non-GC vs
+unsafe/safe axes like so.</p>
+<a class="image" href=".&#x2F;0010_safe_gc_unsafe.svg">
+    <img src=".&#x2F;0010_safe_gc_unsafe.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The unsafe + GC quadrant is conspicuously vacant.
+We have C and C++ in the unsafe + non-GC quadrant,
+Java, Python, Javascript, and Go in the safe + GC quadrant,
+and lastly Swift and Rust in the safe + non-GC quadrant.</p>
+<p>What is a (memory) safe language anyway? Safe languages exhibit at least the following properties</p>
+<ul>
+<li>No undefined behavior</li>
+<li>No use-after-free memory reads</li>
+<li>No out-of-bounds memory reads</li>
+<li>No double-free memory releases</li>
+<li>Only "logic bugs" can happen</li>
+</ul>
+<p>What is a GC (Garbage Collected) language?</p>
+<ul>
+<li>Memory safe</li>
+<li>Most things tend to be heap allocated</li>
+<li>Memory is freed from the heap when the runtime decides (as opposed to the programmer)</li>
+<li>Tend to be a bit slower, tend to have "GC pauses".</li>
+</ul>
+<p>Let's have a look at my completely made up and over-generalizing chart™️</p>
+<a class="image" href=".&#x2F;0011_alternate_view.svg">
+    <img src=".&#x2F;0011_alternate_view.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The picture shows a rough timeline and a rough fast/slow categorization of
+the same languages that were compared previously. Assembly was invented around 1947,
+a good 25 years before C. In the 90's we got Python, Javascript, and Java tightly
+following each other, all Garbage Collected languages (Abe Simpson voice: which was the style at the time).</p>
+<p>In the 2000s we got Golang, also a safe GC language. In 2010 and 2014 we saw the
+birth of two, currently very popular, safe non-GC languages: Rust and Swift, respectively.</p>
+<p>From my totally made up diagram we can draw the conclusion that most GC languages
+are pretty slow, but Go seems to be an outlier? What's going on? Let's put a pin in that for now.</p>
+<h1 id="act-two-why-do-we-need-to-know-how-computers-work">Act two - Why do we need to know how computers work?</h1>
+<a class="image" href=".&#x2F;0012_rhetorical_question.svg">
+    <img src=".&#x2F;0012_rhetorical_question.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Rhetorical, obviously. The textbook answer goes something like "to be able to write
+better programs", but the correct answer is "because computers are Cool".</p>
+<p>If act one was setting up the story, getting to know our protagonist, who just wants to
+"add 1 + 1 really fast", then act two will launch us into conflict with our common
+enemy — memory.</p>
+<a class="image" href=".&#x2F;0013_memory.svg">
+    <img src=".&#x2F;0013_memory.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Let's try to deduce why a GC'd language would be slower than a non-GC'd one.
+Let's try to conquer memory 💪.</p>
+<h2 id="a-novice-tries-to-conquer-memory">A novice tries to conquer memory</h2>
+<p>The novice knows that memory is "segmented" into two main areas: the stack and
+the heap. Functions mostly use stack memory while "classes" would be put on the heap.
+Java almost entire works off of classes, so almost all the memory would be heap allocated.</p>
+<a class="image" href=".&#x2F;0014_heap_stack.svg">
+    <img src=".&#x2F;0014_heap_stack.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The novice also knows that the heap is slower than the stack because things
+can be created anywhere on the heap, meaning the program has to follow a lot
+of pointers to run a program.</p>
+<a class="image" href=".&#x2F;0015_fetching_memory.svg">
+    <img src=".&#x2F;0015_fetching_memory.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Not only that, but storing the thing AND the pointer takes up more space which
+probably makes things slower too. But why?</p>
+<h2 id="a-competent-programmer-gives-it-a-try">A competent programmer gives it a try</h2>
+<p>Inside the CPU there are several cores and each core has several layers of caching
+for memory, and the different layers have different latencies. So accessing
+memory tha has already been cached is way faster.</p>
+<a class="image" href=".&#x2F;0016_cpu_cores.svg">
+    <img src=".&#x2F;0016_cpu_cores.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The latencies are  relative to
+each other depending on how far from the CPU registers the memory is cached.
+If the registers have latency 1 (no unit) then L1 cache would be 3, L2 cache
+would be 12, RAM would be 240 and finally an SSD would be 2400 times slower than
+accessing a register.</p>
+<p>The sizes of the different levels of memory storage are important, too.
+The completely made up computer architecture we will be discussing has
+256 bytes of registers, 32 kB of L1 cache, 2 MB of L2 cache, and 16 GB of RAM.</p>
+<p>This makes sense because if there is a lot of memory on the heap then stuff in
+the L1 and L2 caches would need to be cleared more often because stuff is just
+located in different parts of memory all the time.</p>
+<a class="image" href=".&#x2F;0017_cache_miss.svg">
+    <img src=".&#x2F;0017_cache_miss.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>When the CPU core doesn't have the wanted memory in L1 or L2 cache, that's
+called a cache miss, and the computer would need to fetch the data from RAM,
+which is slow.</p>
+<h2 id="an-expert-gives-it-a-try">An expert gives it a try</h2>
+<p>Modern computers operate using Virtual Memory, where 64-bit CPUs use 48 bits of
+<em>virtual</em> address space giving a maximum theoretical available physical RAM of 256 TB.</p>
+<p>Most computers don't have that much memory. But the CPU,
+or the Operating System for that matter, don't care about that. Each program
+will be given a huge chunk of virtual memory space, and programs running in
+different processes can even get the same, overlapping, virtual memory space.</p>
+<a class="image" href=".&#x2F;0018_virtual_memory.svg">
+    <img src=".&#x2F;0018_virtual_memory.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>When a CPU loads memory it does so using Memory Pages, which have a predetermined
+size depending on your hardware (and sometimes configurable by the OS). A common
+size is a page size of 4 kB.
+If there are too many pages to fit in RAM, the Operating System will "page out" to SSD,
+which means copy the bytes from RAM to SSD to make space for other things in RAM.</p>
+<p>When the CPU later asks for that page, it will be loaded back into RAM, and some
+other page might page out instead.</p>
+<a class="image" href=".&#x2F;0019_paging.svg">
+    <img src=".&#x2F;0019_paging.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Unfortunately the novice and competent programmers have been lied to. The stack /
+heap dichotomy is a lie.</p>
+<a class="image" href=".&#x2F;0020_stack_heap_lie.svg">
+    <img src=".&#x2F;0020_stack_heap_lie.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Instead of the stack growing from lower physical addresses and the heap growing
+from larger physical addresses, leading to an inevitable memory clash in the middle
+of the physical stick of RAM, memory is arranged in pages which are mapped using
+virtual memory with a seemingly endless supply of addresses.</p>
+<a class="image" href=".&#x2F;0021_physical_pages.svg">
+    <img src=".&#x2F;0021_physical_pages.svg" style="width: 100%; object-fit: cover;" />
+</a><div class="hscroll">
+    <table><thead><tr><th>Program</th><th>Type</th><th>Address</th><th>Data</th></tr></thead><tbody>
+<tr><td>Chrome</td><td>Stack</td><td>0xFFFF</td><td>0xFEEDC0DE</td></tr>
+<tr><td>VSCode</td><td>Heap</td><td>0xFFA0</td><td>0xF00DC0DE</td></tr>
+<tr><td>Terminal</td><td>Stack</td><td>0xFECC</td><td>0xCAFEC0DE</td></tr>
+</tbody></table>
+
+</div>
+<p>Each page contains data from a singe program and the pages have no particular
+order in physical RAM, they're just scattered around.</p>
+<h2 id="things-we-didn-t-talk-about">Things we didn't talk about</h2>
+<p>OS <a href="https://en.wikipedia.org/wiki/Memory_overcommitment">memory overcommit</a>.
+<a href="https://en.wikipedia.org/wiki/Translation_lookaside_buffer">Translation Lookaside Buffer</a>
+(TLB). <a href="https://en.wikipedia.org/wiki/Memory_management_unit#x86-64">Memory Management Unit</a> (MMU).
+All real, not made up things, that you can search for on your favorite search engine.</p>
+<h1 id="act-three-explaining-fast-software">Act three - Explaining fast software</h1>
+<p>Act one introduced us to the concept of math, and how humans have tried to avoid
+doing it since way before I was born. Software seems like a good solution
+but some programming languages are slower than others.</p>
+<p>Act two tried to lay the foundation for understanding why some programming
+languages are slow by explaining hardware, but didn't reveal any solutions.</p>
+<p>Now is the time to combine our newfound knowledge of hardware and software to do what we
+came to do. Slay our enemy, Memory.</p>
+<a class="image" href=".&#x2F;0022_kill_memory.svg">
+    <img src=".&#x2F;0022_kill_memory.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Imagine that you have some data that could be expressed as an array, where each
+piece of data takes 64 bytes, and there are 512 elements, how would that data
+be laid out in memory?</p>
+<a class="image" href=".&#x2F;0023_java_array.svg">
+    <img src=".&#x2F;0023_java_array.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>In Java, it would probably be an array of 512 elements where each element was
+an 8 byte pointer to an object taking up 64 bytes. The total amount of memory
+needed would be 512 * (8 + 64) bytes.</p>
+<a class="image" href=".&#x2F;0024_java_array_realistic.svg">
+    <img src=".&#x2F;0024_java_array_realistic.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>In a real world Java application, each 64 byte node would probably contain several
+pointers to other pieces of data as well. A tasty pointer soup, if you will.</p>
+<a class="image" href=".&#x2F;0025_cache_size_latency.svg">
+    <img src=".&#x2F;0025_cache_size_latency.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The more memory each element uses, the more likely it becomes that a complete
+data set that is currently used by the CPU to do computations can't fit into
+L1 or L2 cache.</p>
+<p>Each time the size of the data set is larger than L1 cache
+the CPU hits a latency cliff, where it needs to ask L2 cache for more data.
+When the data set is larger than L2 another latency penalty is experienced by
+the program.</p>
+<p>First a 3x latency penalty for data sets larger than L1, then a 12x
+latency penalty for data sets larger than L2, and so on. And in the ultimate
+worst case, penalties for memory being paged in and out of SSD storage.</p>
+<p>Calculating 1 + 1 is finally in reach. Or maybe something a bit more complicated, too.</p>
+<h1 id="epilogue">Epilogue</h1>
+<p>It's not all bad.</p>
+<p>What are the available mitigations, for a software developer like you? First of
+all you need to start using languages with larger amount of control of data
+layout. Languages that give you the opportunity to choose if data is behind a
+pointer allocation (heap) or not. Languages like Rust.</p>
+<a class="image" href=".&#x2F;0026_ferris.svg">
+    <img src=".&#x2F;0026_ferris.svg" style="width: 100%; object-fit: cover;" />
+</a>
+<p>And what about Go? We put a pin in it, remember? Go occupies a strange niche:
+A GC language that's faster than its siblings. It's more modern, but not based
+on LLVM like Swift and Rust. It uses the Plan 9 toolchain, but more importantly
+Go has structs that can live on the stack, and mostly uses its GC for long-lived
+objects things are passed around between different parts of the program. And even
+then it may skip heap allocations by doing escape analysis.</p>
+<p>Escape analysis is a compiler optimization technique that elides heap allocations
+if the compiler can prove that it can do the given task directly on the stack instead.
+Rust uses the LLVM compiler for optimizations, and LLVM can also do escape analysis.</p>
+<p>Whew, I hoped <em>any</em> of that made sense.</p>
+<p>If you find any errors, or just want to ask a question, contact me using my e-mail address.</p>
+<h1 id="references">References</h1>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Endianness">Wikipedia: Endianness</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Virtual_memory">Wikipedia: Virtual Memory</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Translation_lookaside_buffer">Wikipedia: Translation Lookaside Buffer</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Memory_management_unit#x86-64">Wikipedia: Memory Management Unit</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Memory_overcommitment">Wikipedia: Memory overcommitment</a></li>
+</ul>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/unsticking-find-my-from-a-mac/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>Unsticking “Find My” from a Mac after changing my Apple ID e-mail —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Unsticking “Find My” from a Mac after changing my Apple ID e-mail —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="Unsticking “Find My” from a Mac after changing my Apple ID e-mail —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I recently changed the e-mail address of my Apple ID, but the Find My association
+on the mac didn't get the memo." />
+        <meta name="twitter:description" content="I recently changed the e-mail address of my Apple ID, but the Find My association
+on the mac didn't get the memo.">
+        <meta property="og:description" content="I recently changed the e-mail address of my Apple ID, but the Find My association
+on the mac didn't get the memo." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<header>
+    <h1 class="title">
+        Unsticking “Find My” from a Mac after changing my Apple ID e-mail
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date"> 1 August 2023 · reading time 3 minutes</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/operating-system/">operating system</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/os/">os</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/mac/">mac</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/apple/">apple</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+    <ol class="page-toc">
+        
+        <li>
+            <a href="https://zkc.se/blog/unsticking-find-my-from-a-mac/#changing-e-mail-of-my-apple-id">Changing e-mail of my Apple ID</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/unsticking-find-my-from-a-mac/#handing-off-my-old-workhorse-to-a-colleague">Handing off my old workhorse to a colleague</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/unsticking-find-my-from-a-mac/#apple-chat-support-actually-helped">Apple chat support actually helped</a>
+        </li>
+        
+        <li>
+            <a href="https://zkc.se/blog/unsticking-find-my-from-a-mac/#an-unrelated-but-annoying-bug">An unrelated but annoying bug</a>
+        </li>
+        
+    </ol>
+    
+
+<p>I recently changed the e-mail address of my Apple ID, but the Find My association
+on the mac didn't get the memo.</p>
+<span id="continue-reading"></span>
+<p>This is the story of how I went from a computer that couldn't be transferred to
+my colleague, to one that could.</p>
+<h1 id="changing-e-mail-of-my-apple-id">Changing e-mail of my Apple ID</h1>
+<p>To begin with, I had a mac which was signed in with my Apple ID, let's say
+that it was <code>erik.zivkovic@example.com</code>. I was signed in to multiple Apple
+service, including "Find My".</p>
+<p>When we added "Sign in with Apple" to our web and iOS applications, I had a
+problem on my hands - I was already signed in to our dev and prod environments
+using my Google Workspace e-mail, which was <code>erik.zivkovic@example.com</code>.</p>
+<p>To test Sign in With Apple, I needed a new e-mail address because my old one
+was already associated with my Google Workspace credentials (we don't have
+many-to-one mappings of credentials).</p>
+<p>So I did the "smart thing", I asked to get an extra e-mail address associated
+with my Google Workspace profile, and then I changed my Apple ID to use the
+new address — <code>erik.zivkovic@example.com</code>.</p>
+<h1 id="handing-off-my-old-workhorse-to-a-colleague">Handing off my old workhorse to a colleague</h1>
+<p>After wiping the computer properly I handed the computer over to my colleague
+who tried to sign in using his Apple ID. Instead of being logged in he was
+presented with a dialog box —</p>
+<div class="aside">
+    <div class="aside-title"><p>macOS dialog</p>
+</div>
+    
+    
+    <p><strong>Apple ID Password</strong></p>
+<p>Enter Apple ID password for "erik.zivkovic@example.com" to turn off Find My Mac.</p>
+
+    
+</div>
+<p>Naturally, I tried my Apple ID password. But it didn't work, because my Apple ID
+is no longer <code>erik.zivkovic@example.com</code>, it's <code>erik@example.com</code>.</p>
+<p>My computer was still enrolled to "Find My", and was being managed by my Apple ID,
+with seemingly no way to turn it off.</p>
+<h1 id="apple-chat-support-actually-helped">Apple chat support actually helped</h1>
+<p>After doing a few rounds with Swedish Apple support, which unfortunately weren't
+much help, I decided to try U.S. Apple support.</p>
+<p>The nice lady helped me understand what I needed to do, shortly summarized below,
+so you don't have to spend hours chatting with support</p>
+<ol>
+<li>Make sure the problematic computer is connected to the internet</li>
+<li>Sign in to <a href="https://iCloud.com">iCloud.com</a> using your Apple ID</li>
+<li>In the map view, there is a dropdown where you can select computers</li>
+<li>Select the problematic mac</li>
+<li>Select "Erase Mac"</li>
+<li>The mac should start erasing remotely</li>
+<li>It should now be possible to "Remove from account" — do that</li>
+<li>After erasing is complete
+<ul>
+<li>Use Disk Utility to create a new partition, <code>APFS</code> worked well for me —
+call the new partition "Macintosh HD"</li>
+<li>Quit Disk Utility, then install macOS</li>
+</ul>
+</li>
+</ol>
+<p>You should now have an unstuck computer.</p>
+<p>I wrote a <a href="https://apple.stackexchange.com/q/462691/138654">Q/A style answer</a> on
+the "Ask Different" StackExchange for this issue.</p>
+<h1 id="an-unrelated-but-annoying-bug">An unrelated but annoying bug</h1>
+<p>I also ran into an issue where I first used a <code>Mac OS Extended (Journaled)</code>
+filesystem for the disk/partition. When trying to install to the "Macintosh HD"
+that was formatted using <code>Mac OS Extended (Journaled)</code> I got an annoying error:</p>
+<div class="aside">
+    <div class="aside-title"><p>Installer popover</p>
+</div>
+    
+    
+    <p>The operation could not be completed (com.apple.BuildInfo.preflight.error error 10.)</p>
+
+    
+</div>
+<p>After scratching my head for a while I tried using <code>APFS</code> for the file system instead
+of <code>Mac OS Extended (Journaled)</code>. And it worked!</p>
+<p>I wrote a <a href="https://apple.stackexchange.com/q/462689/138654">Q/A style answer</a> on
+the "Ask Different" StackExchange for this issue too.</p>
+<p>Good Luck!</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2025 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
