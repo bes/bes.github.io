@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/fosdem-2026/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+    
+    
+    
+        <title>FOSDEM 2026 —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="FOSDEM 2026 —&nbsp;Domain Specific Language">
+        <meta property="og:title" content="FOSDEM 2026 —&nbsp;Domain Specific Language" />
+    
+    
+        <meta name="description" content="I had the opportunity to go to FOSDEM 2026!" />
+        <meta name="twitter:description" content="I had the opportunity to go to FOSDEM 2026!">
+        <meta property="og:description" content="I had the opportunity to go to FOSDEM 2026!" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css?h=a30e085421f257168484">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <picture>
+            <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/images/background_dark-480.jpg 480w, /images/background_dark-768.jpg 768w, /images/background_dark-1280.jpg 1280w, /images/background_dark-2048.jpg 2048w"
+                sizes="100vw"
+            />
+
+            <img
+                src="/images/background-1280.jpg"
+                srcset="/images/background-480.jpg 480w, /images/background-768.jpg 768w, /images/background-1280.jpg 1280w, /images/background-2048.jpg 2048w"
+                sizes="100vw"
+                alt=""
+                fetchpriority="high"
+                class="top-header-img"
+            />
+        </picture>
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https:&#x2F;&#x2F;zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article>
+<header>
+    <h1 class="title">
+        FOSDEM 2026
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">31 January 2026 · 3594 words</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/conference/">conference</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/fosdem/">fosdem</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/open-source/">open source</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+        <ol class="page-toc">
+            
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#chaos-on-the-rails">Chaos on the rails</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#ulb-campus">ULB Campus</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#day-1-saturday">Day 1 - Saturday</a>
+        
+            <ol>
+                
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#rosa-finding-backdoors-with-fuzzing">ROSA: Finding backdoors with fuzzing</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#interoperability-regulation-in-the-eu-opening-ios-and-android-for-free-software">Interoperability regulation in the EU: Opening iOS and Android for Free Software</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#adversarial-interoperability-writing-a-microsoft-bob-application">Adversarial interoperability - Writing a Microsoft Bob application</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#raylib-a-12-year-adventure-as-a-solo-maintainer">raylib: a 12-year adventure as a solo-maintainer</a>
+        
+    </li>
+    
+
+            </ol>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#day-2-sunday">Day 2 - Sunday</a>
+        
+            <ol>
+                
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#webassembly-on-constrained-devices">WebAssembly on Constrained Devices</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#rust-boy-a-rust-journey-into-game-body-dev">Rust-boy: A Rust journey into Game Body dev</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#gstreamer-1-28-and-beyond">GStreamer 1.28 and beyond</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#clickhouse-s-c-and-rust-journey">Clickhouse’s C++ and Rust journey</a>
+        
+    </li>
+    
+
+            </ol>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/fosdem-2026/#a-word-from-our-sponsor">A word from our sponsor</a>
+        
+    </li>
+    
+
+        </ol>
+    
+
+<p>I had the opportunity to go to FOSDEM 2026!</p>
+<span id="continue-reading"></span><h1 id="chaos-on-the-rails">Chaos on the rails</h1>
+<p>The trip to Brussels by train was a bit of a disappointment since all the
+departures between Hamburg and Köln were canceled while I was on the train,
+making it hard to reschedule (even though I had bought cancellable tickets!). I
+had to take a detour through Münster where I had to spend 1.5 hours because my
+train there was delayed, which made me miss my connection, and the following
+trains kept getting canceled.</p>
+<p>I finally made it to Köln, but by that time my Eurostar to Brussels had departed
+and I had to spend the night in Köln. I finally made it to Brussels on Saturday
+morning and made it to the campus an hour before lunch.</p>
+<p>In short, Germany tried to break me, but I am still here and more powerful than
+ever.</p>
+<h1 id="ulb-campus">ULB Campus</h1>
+<p>The ULB campus where FOSDEM takes place is filled to the brim with people! The
+atmosphere is very chill and there are talks, dev rooms, food trucks, and a lot
+of energy everywhere.</p>
+<div class="aside">
+    <div class="aside-title"><p>Smoke</p>
+</div>
+    
+    <a class="image" href=".&#x2F;smoke.png">
+        <img src=".&#x2F;smoke.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+    <p>Not a fire, that's just smoke from <em>a lot</em> of fries.</p>
+
+    
+</div>
+<h1 id="day-1-saturday">Day 1 - Saturday</h1>
+<p>Note - the rest of the sections were written while I was listening to the talks
+and are not edited. They may contain factual errors and other horrors.</p>
+<h2 id="rosa-finding-backdoors-with-fuzzing">ROSA: Finding backdoors with fuzzing</h2>
+<p>(Security) –
+<a href="https://fosdem.org/2026/schedule/event/BHNWLN-rosa-backdoor-detector/">event page</a> –
+Michaël Marcozzi and Dimitri Kokkonis.</p>
+<p>A backdoor can mean many things to many people; weak server config, ML training
+data poisoning, or weaknesses in cryptographical algorithms.</p>
+<p>"Backdoors can be anything".</p>
+<p>This talk focused on code-level backdoors, code embedded in your software that
+gives an attacker access to a computer. They call this "hidden access", and it
+is not an exclusively academic problem: xz-utils, php, and proprietary firmware
+are just some examples where real-world backdoors were founds.</p>
+<p>xz-utils was a supply chain attack, because it was a piece of software that many
+linux systems relied on, and if the attack were to be successful it could have
+caused a lot of problems.</p>
+<p>Fuzzers are a class of software used to find memory errors, exploring errors by
+randomized testing in both source code and binaries.</p>
+<p>The goal of the project is to prevent backdoors in CI for open-source projects.
+After investigating what options existed for finding backdoors, it was mainly
+based on manual engineering efforts. The idea is to automate parts of the
+reverse engineering process. A hurdle was that there was not a large corpus of
+examples for software backdoors available. Fuzzers are good at finding crashes,
+but are not really good at finding backdoors.</p>
+<p>The idea of <a href="https://github.com/binsec/rosa">ROSA</a>. is to take an out-of-the box
+Graybox Fuzzer and add a "novel metamorphic oracle" to find backdoor triggering
+inputs that cause diverging behavior. The team created ROSARUM which is a
+standardized backdoor benchmark with 17 examples of backdoors to benchmark
+against.</p>
+<p>ROSA can be used to find a backdoor in Boa HTTP server found in some Belkin
+devices. Phase 1 for the fuzzer is to find representative input and spends some
+time doing that. Phase 2 is to "intensively explore the input space". ROSA then
+monitors the syscall interface to see if some inputs trigger diverging system
+calls. The divergent system calls can then be manually vetted.</p>
+<p>Demonstration! Disclaimer: The fuzzer has been biased for the demo not to take 4
+hours. The demonstration begins by showing some decompiled PHP server code,
+which contains a backdoor; "but we don't know that yet". ROSA then starts to
+run; ROSA is written in Rust and the CLI/TUI is Ratatui a popular Rust TUI
+framework.</p>
+<p>Backdoor found!</p>
+<p>The output from ROSA can now be inspected. We see the <code>rosa-explain</code> command in
+action: ROSA explains "why this is a backdoor". We then run the application
+through <code>strace</code> and after a little bit of scrolling we see a very strange
+system call that should not be there; an <code>execv</code>.</p>
+<p>If we now run the server program with just the right parameters we get ROOT. A
+very polite applause from the audience was heard.</p>
+<p>Fuzzing is not deterministic! It takes 1.5 hours for a run, and it has a 87%
+success rate. ROSA is the first fuzzer-based generic backdoor detector and
+ROSARUM is the first standardized backdoor benchmark.</p>
+<h2 id="interoperability-regulation-in-the-eu-opening-ios-and-android-for-free-software">Interoperability regulation in the EU: Opening iOS and Android for Free Software</h2>
+<p>(Legacy &amp; Policy) –
+<a href="https://fosdem.org/2026/schedule/event/TQS7LM-interoperability-dma-apple-google/">event page</a> –
+Alexander Matern, Victor Le Pochat, Lori Roussey, Gabriel Kobus, and Lucas Lasota.</p>
+<p>The exciting topic of the EU Digital Markets Act!</p>
+<p>Interoperability is important because it gives people the opportunity to
+communicate between different pieces of hardware and software.</p>
+<div class="aside">
+    <div class="aside-title"><p>Interoperability regulation panel</p>
+</div>
+    
+    <a class="image" href=".&#x2F;dma.png">
+        <img src=".&#x2F;dma.png" style="width: 100%; object-fit: cover;" />
+    </a>
+    
+    
+    <p>Alexander Matern, European Commission's DMA enforcement team.
+Victor Le Pochat, European Commission's DMA enforcement team.
+Lori Roussey, Data Rights.
+Gabriel Kobus, European Commission's DMA enforcement team.
+Panel moderation: Lucas Lasota, Legal Researcher and Lecturer at the Halle-Wittenberg University.</p>
+
+    
+</div>
+<p>The biggest companies on the planet do not want to interoperate. Less than 1% of
+the room uses a mobile phone that does not run iOS or Android (I saw one hand
+raised).</p>
+<p>The DMA puts an obligation on the biggest companies on the planet: it gives open
+software access to the largest markets on the planet. We have members of the EU
+DMA enforcement team on stage, and they are fighting "an uphill battle".</p>
+<p>It is a simple law: You shall get interoperability by design. Google, Apple, and
+Microsoft do what they can to avoid providing interoperability. As developers we
+can go these companies' portals to request interoperability which will add more
+pressure on them to do the right thing.</p>
+<p>Vendors use Security and Integrity as ways to argue that their users will be at
+risk if their systems were more open. The security of a system may be that when
+I put a password in place to protect a certain piece of data, and the integrity
+of the operating system is what makes sure those protections can not be
+circumvented. The DMA requires that the integrity of a system is not diminished
+when interoperability is provided, and vendors use that to argue that they can
+not make their systems more interoperable. Some things that were possible in the
+past have been cut by way of app stores, even if it did not make the systems
+inherently more secure.</p>
+<p>Apple has always had an adversarial role in the interoperability world, making
+the relationship with the open source community very simple: we know where they
+stand. Google on the other hand has a more nuanced relationship; recently the
+Android OS has taken steps to make it more difficult to run third party app
+stores. Android devices are relatively easy to modify and run custom operating
+systems, but recently some changes has made that harder as well. In short,
+Google's approach to Android governance has changed over the last few years.</p>
+<p>Something for the kids: Article 6-7 mentioned a few times; a few smiles seen in
+the panel.</p>
+<p>Data interoperability and portability: Portability is different from
+interoperability in that portability generally means data flowing one-way where
+interoperability is defined as (at least) two-way.</p>
+<p>The DMA is designed to prevent Gatekeeping: Data access through APIs,
+documentation for accessing data, and a lot of other things are now required to
+be provided free of charge and in machine-readable formats.</p>
+<p>A small joke from the moderator: In the modern world we are not allowed to do
+sideloading, but we are expected to do "side-listening" (playing Spotify but not
+paying attention), and "side-thinking" (using AI to write for us).</p>
+<p>The DMA enforcement team have weekly and monthly interactions with the large
+companies: the enforcement team listen to our complaints w.r.t interoperability
+and they first ask the vendors nicely, and often they comply, but they also have
+other regulatory tools in their toolbox (including, ultimately, fines).</p>
+<p>A few examples of what has been achieved by the DMA: On iOS you can now set
+default applications other than Apple's own and iOS now supports alternative app
+stores, and browser vendors can distribute their own engines for their browsers
+(at least in the EU).</p>
+<h2 id="adversarial-interoperability-writing-a-microsoft-bob-application">Adversarial interoperability - Writing a Microsoft Bob application</h2>
+<p>(Main track) –
+<a href="https://fosdem.org/2026/schedule/event/XHSRAF-microsoft-bob-adversarial-interoperability/">event page</a> –
+HP van Braam</p>
+<div class="quote">
+    <p>"I am HP van Braam from the Godot Foundation, and I like old computers"</p>
+
+    <div class="quote-title">Braam</div>
+</div>
+<p>Bob – A project from Microsoft from 1994 that not many people have heard about.
+Is there anything we can learn from this project? Braam came across a forum post
+claiming that someone had a friend using a computer for only one thing: Writing
+letters using Microsoft Bob (Letter writer). Her friends had lost her files, oh
+no!</p>
+<p>Bob is a workplace program manager. Basically your desktop, but at that time you
+did everything from there, a replacement for the Windows 3.1 desktop. "There is
+an irresistible earnestness to it".</p>
+<a class="image" href=".&#x2F;bob.png">
+    <img src=".&#x2F;bob.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>Bob does things that computers simply do not do anymore. You get a birthday
+present on your birthday (if you enter your birthday in the Bob calendar). There
+are flowers on your desktop. You can move them around. Scalable vector graphics.
+Wonderful.</p>
+<p>Bob has some slightly outdated skeumorphisms - full screen organizing desk, full
+screen folder organizer, and so on.</p>
+<p>Despite its quirky look, it was built with modern APIs (for the time) - COM,
+MAPI, and MS JET (whatever that is). Some of those are still used in some form
+today.</p>
+<p>Braam was able to use a combination of a partial dump of the SDK found on the
+internet, as well as Ghidra decompilation how to figure out how to program for
+Microsoft Bob.</p>
+<p>Back to Jean. Jean was able to get some files on a floppy, but was not able to
+figure out how to get the letters back. This is because there are no files,
+everything was saved in a single database (file). This is how the modern world
+works: every SaaS company saves user data in a huge database.</p>
+<p>You can play with Microsoft Bob at <a href="https://bob.estate/">https://bob.estate/</a>.</p>
+<h2 id="raylib-a-12-year-adventure-as-a-solo-maintainer">raylib: a 12-year adventure as a solo-maintainer</h2>
+<p>(Main track) –
+<a href="https://fosdem.org/2026/schedule/event/883PBF-raylib-12-year-adventure/">event page</a> –
+Ramon (Ray) Santamaria</p>
+<a class="image" href=".&#x2F;raylib.png">
+    <img src=".&#x2F;raylib.png" style="width: 100%; object-fit: cover;" />
+</a>
+<p>The basis is a simple and easy to use library to put graphics on the screen,
+born from a need to teach beginner programmers / students to do graphics
+programming.</p>
+<p>The keyword is "enjoy". It was designed to be enjoyable to use.</p>
+<p>The whole presentation today is built in <a href="https://www.raylib.com/">raylib</a>.</p>
+<p>With around 100 lines of code you can get a full 2D or 3D application, you can
+load shaders, and you can also deploy raylib to embedded systems, such as UIs in
+cars (e.g. openpilot).</p>
+<p>A small library to teach graphics or video games programming has evolved over 12
+years and just kept growing. In 2019 the library got a Google Open Source Award
+and at that time it got a lot of attention. In 2020 Ray quit his job and worked
+full-time on raylib for a while.</p>
+<p>The three M's: Maintenance, Motivation, Money – three hard things when working
+as a solo developer. Asking yourself "How long am I willing to work on my
+project?". Best advice - Keep it simple! Raylib is "only 50k lines of code".</p>
+<p>How long can motivation last? Your primary motivation must be that you enjoy
+what you do. If you stop to enjoy what you do, it will be difficult to stay with
+it. Ray stayed motivated by engaging with the community and working on side
+project related to raylib. Receiving recognition for his work was highly
+motivating. The last thing is self-care: "no-screen hobbies".</p>
+<h1 id="day-2-sunday">Day 2 - Sunday</h1>
+<h2 id="webassembly-on-constrained-devices">WebAssembly on Constrained Devices</h2>
+<p>(Rust) –
+<a href="https://fosdem.org/2026/schedule/event/8TDKRT-rust-wasm-embedded/">event page</a> –
+Fedor Smirnov</p>
+<p>Running WebAssembly on microcontrollers!</p>
+<p>Why would you want to do it in the first place?</p>
+<p>At Myrmic they build a common middleware layer that manages application code
+across devices. WASM is a good choice for OS-grade devices, because of strong
+sandboxing and target-independent deployment. On microcontrollers it isn't as
+obvious. The things you get is that you can update device behavior without
+reflashing, it isolates application logic from the firmware and it reduces the
+risk of bricking; if the application crashes you don't lose access to the
+device.</p>
+<p>What does it mean for your code?</p>
+<p>There are a number of build targets for wasm on device; wasi targets which
+assume things about the runtime and the unknown target that assumes almost
+nothing. The downside of unknown is that you need to provide the functionality
+you need yourself, but on the other hand you can avoid some bloat that might not
+fit into your hardware of choice.</p>
+<p>The wasm interface is constrained to integers and floats, but since the host can
+access the wasm sandbox's memory, you can communicate addresses to the host and
+the host can then read the memory directly. To make nice interfaces you can wrap
+all of this low-level stuff in safe Rust interfaces, mostly through macros that
+implement the functionality for you.</p>
+<p>What are the tradeoffs for the runtime and integration?</p>
+<p>When you want to run your wasm program on embedded, you need to select a
+runtime. Unfortunately the Rust runtimes are (currently) quite expensive
+size-wise, i.e. they require much more memory than the smallest C runtime:
+Almost 10 times more expensive ~60KiB (wamr) vs ~600KiB (wasmtime). There is
+also a tradeoff around speed: interpreted mode vs AoT (Ahead-of-Time compiled),
+the Rust runtimes run in interpreted mode, which is 10 times slower than AoT,
+which is what wamr uses. There is certainly room for the Rust runtimes to
+improve!</p>
+<h2 id="rust-boy-a-rust-journey-into-game-body-dev">Rust-boy: A Rust journey into Game Body dev</h2>
+<p>(Rust) –
+<a href="https://fosdem.org/2026/schedule/event/W3UFSK-rust-game-boy/">event page</a> –
+Federico Bassini</p>
+<p>Federico says "The daily developer loop can be kind of boring".
+But last year Federico discovered something at FOSDEM: A passion for making
+retro games in Rust!</p>
+<div class="quote">
+    <p>"The daily developer loop can be kind of boring"</p>
+
+    <div class="quote-title">Federico</div>
+</div>
+<p>The first part of the talk is a walk-through of the Game Boy and Game Boy Color
+hardware architecture: Surprisingly similar but with some differences for color
+management (obviously...).</p>
+<p>To make a game you need to be able to write code and compile it in the right
+format! There are a bunch of tools and documentation online. There are also some
+tools like GB Studio which is a no-code tool to make Game Boy games.</p>
+<p>But Rust can't be compiled directly to the original Game Boy hardware! But Game
+Boy Advance has an ARM cpu; and there are few Rust projects to support it.</p>
+<p>But there is a workaround for Rust on Game Boy! "Rust-GB". It is a way to
+compile to LLVM-IR and from there convert it to C and finally you can get
+machine code for The Game Boy.</p>
+<p>Can we develop a compiler for Rust to Game
+Boy? <a href="https://github.com/ffex/rust-boy">Rust-boy</a> is a library that tries to go
+all the way from Rust to assembly code that is compatible with the Game Boy
+hardware. It is a modular codebase that contains <code>gb_asm</code> which emits assembly
+code for the Sharp LR35902 processor, <code>gb_std</code> which is a "standard library"
+for building Game Boy games, and finally <code>rust_boy</code> that exposes a bunch of
+higher-level APIs that makes it easier to start building a Game Boy game.</p>
+<p>This library isn't about "writing arbitrary Rust code" and running it on the
+Game Boy, it is more of an abstraction layer for the assembly code that needs to
+be generated, so it is still low level.</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Main game loop
+</span></span><span class="z-source z-rust">    asm<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">label</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>MainLoop<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">ld_bc</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-integer z-decimal z-rust">160</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">call</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>WaitVBlank<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">jp</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>MainLoop<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">
+</span><span class="z-source z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> VBlank function
+</span></span><span class="z-source z-rust">    asm<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">chunk</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-path z-rust">Chunk<span class="z-punctuation z-accessor z-rust">::</span></span>Functions</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">label</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>WaitVBlank<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">comment</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>Wait for vertical blank<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">ld_a_label</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>[$FF44]<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">cp_imm</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-constant z-numeric z-integer z-decimal z-rust">144</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">jr_cond</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span><span class="z-meta z-path z-rust">Condition<span class="z-punctuation z-accessor z-rust">::</span></span><span class="z-constant z-other z-rust">NZ</span><span class="z-punctuation z-separator z-rust">,</span> <span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span>WaitVBlank<span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span>
+</span><span class="z-source z-rust">        <span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">ret</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">
+</span><span class="z-source z-rust">    <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> Generate assembly
+</span></span><span class="z-source z-rust">    <span class="z-support z-macro z-rust">println!</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-string z-quoted z-double z-rust"><span class="z-punctuation z-definition z-string z-begin z-rust">&quot;</span><span class="z-constant z-other z-placeholder z-rust">{}</span><span class="z-punctuation z-definition z-string z-end z-rust">&quot;</span></span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-separator z-rust">,</span> asm<span class="z-punctuation z-accessor z-dot z-rust">.</span><span class="z-support z-function z-rust">to_asm</span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-section z-group z-end z-rust">)</span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></code></pre>
+<p>You still need to know a lot about the Game Boy to use it!</p>
+<p>Something Federico sees in the future is a Rust parser which would make it
+possible to write actual Rust code and it would be automatically translated to
+use <code>gb_std</code>.</p>
+<h2 id="gstreamer-1-28-and-beyond">GStreamer 1.28 and beyond</h2>
+<p>(Audio Video &amp; Graphics Creation) –
+<a href="https://fosdem.org/2026/schedule/event/SVKGDR-gstreamer_1_28_and_beyond/">event page</a> –
+Tim-Philipp Müller</p>
+<p>GStreamer is an open source, cross-platform video framework. You can read,
+write, stream, mix, cut, edit, and do many other things with media.</p>
+<p>Major release 1.28! Released just a couple of days ago. TPM will give us a
+high-level walk through today.</p>
+<p>There are a bunch of new <strong>codec support</strong>: H.266, MPEG-H audio and some other
+changes. <strong>SMPTE 2038 ancillary data</strong> that can be used to add metadata to a
+stream like the game score of a football game.</p>
+<p><strong>Enhanced RTMP</strong> add support for modern video codecs like H.265 and AV1, also
+multiple audio and/or video tracks.</p>
+<p><strong>HLS stream authoring</strong>: I-frame only playlists, and single media file output
+for Video on Demand use cases.</p>
+<p><strong>Speech + Translations</strong> support for Speech-to-Text, voice cloning, deepgram
+speech-to-text transcription, output compression for translated audio to "catch
+up" if there is a delay in the automatic translation.</p>
+<p><strong>Analytics</strong> ONNX support, more tensor decoders, and a few other things.</p>
+<p><strong>Vulkan</strong> AV1 and VP9 decoding support, H.264 encoding support, H.265 decoder
+with 10-bit depth.</p>
+<p><strong>Wayland</strong> more support for a few different things for Linux desktop
+environments.</p>
+<p><strong>GNOME</strong> ShowTime replaces Totem media player, which uses all the "cool new
+stuff" that have been added in the last few years.</p>
+<p><strong>AMD HIP plugin</strong> AND GPU programming API for portable CUDA-like development on
+AMD or NVIDIA.</p>
+<p><strong>Bidnings</strong> New C++ bindings, new-ish Go bindings, Python bindings
+improvements, and Rust bindings improvements.</p>
+<p><strong>fallbacksrc</strong> multi-stream support via the Streams API, supports encoded
+output; not just raw audio/video.</p>
+<p><strong>Misc</strong> VMAF element (perceptual video assessment score), Webkit gets a new
+plugin for the "WPE Platform API".</p>
+<p><strong>Tracing and debugging</strong> enhanced dots-viewer, GstLogContext to fine-tune
+logging output to reduce log message spam.</p>
+<p>Future stuff!</p>
+<p>GStreamer will be adding more Rust, "that is where the cool stuff happens".
+Media over QUIC: a simpler replacement for WebRTC. WebRTC stack is going to be
+converted to Rust, which will improve scalability. MPEG-TS will be converted to
+Rust, complete rewrite which will give us more reliability and it will get a
+more robust time domain. More speech &amp; translation features; already support
+cloud translation but new focus will be local translation e.g. Whisper. More
+formats like AV2.</p>
+<h2 id="clickhouse-s-c-and-rust-journey">Clickhouse’s C++ and Rust journey</h2>
+<p>(Rust) –
+<a href="https://fosdem.org/2026/schedule/event/NBLNRY-rust-clickhouse/">event page</a> –
+Alexey Milovidov</p>
+<p>"How to avoid a full rewrite".</p>
+<p>ClickHouse is an open source project, mostly C++ codebase which is about
+1.5MLoC.</p>
+<p>"C++ is not the nicest language", but it was a good choice in 2009 and it is
+prominent in many domains like games development and database management
+systems.</p>
+<p>If we started today would we write ClickHouse in Rust? The pain of C++ is "
+soothed"
+by running a lot of tests and santizers (ASan, TSan, UBSan, and so on) in CI.
+Lots and lots of tests: 10-30 million test invocations per day. They also run
+Jepsen tests on their database.</p>
+<p>Arguments against Rust: Full rewrite would take years. Combining two languauges
+is sometimes worse than using just one or the other. "Throwing away accumulated
+knowledge".</p>
+<p>ClickHouse's approach: Iterative Development. Take a non-essential library that
+can easily be turned off, and use it as an example; added a new function to SQL
+for BLAKE3 hashing. The second thing they did was to improve their command line
+application; the result of this was "Rust was worth it". Next they added a new
+language dialect, PRQL, that existed as a Rust library.</p>
+<p>ClickHouse added support for the Delta Lake format for Data Lakes, and it was
+integrated using an existing Rust library.</p>
+<p>What is wrong with Rust? To combine C++ with Rust you need to take some extra
+care. To get reproducible builds you need to take care of a few things:
+all dependencies must be pinned to to avoid supply-chain attacks, and
+dependencies must be built from source.</p>
+<p>When writing wrapper libraries for C++, you have to take extra care to make sure
+the interface is safe to use and correct. C++ and Rust error handling works a
+bit differently; C++ uses exceptions, and Rust libraries typically pass errors
+upwards on the stack, or the code panics. You don't want a third party library
+with an internal panic to bring down your server or application. "ClickHouse CI
+found bugs (causing panics) in every Rust library we used".</p>
+<p>When it comes to sanitizers, for C++ all code must be checked with sanitizers.
+For (safe) Rust you might think that sanitizers are not needed, but when
+combining it with C++ it must be possible to run the sanitizers on the combined
+code.</p>
+<p>Takeaways: Rust is a great language. You can come and be ClickHouse contributor
+by adding features using Rust!</p>
+<h1 id="a-word-from-our-sponsor">A word from our sponsor</h1>
+<p>Now go watch this <a href="https://www.youtube.com/watch?v=v0JjG0Qfwi8">talk</a> where
+Bryan Cantrill references Swedish
+physician <a href="https://en.wikipedia.org/wiki/Thermal_grill_illusion">Torsten Thunberg's "Thermal Grill Illusion"</a> (
+two pipes, one slightly warm and the other slightly cool, are twisted together,
+and when touched cause a strong reaction to want to pull your hand away as a
+metaphor for Marc Andreesen's writing on "Software is eating the world".</p>
+
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2026 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
