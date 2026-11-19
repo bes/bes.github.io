@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+        <meta name="fediverse:creator" content="@ezivkovic@hachyderm.io">
+    
+    
+    
+        <title>Mapping iOS devices to their iOS version —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Mapping iOS devices to their iOS version">
+        <meta property="og:title" content="Mapping iOS devices to their iOS version" />
+    
+    
+        <meta name="description" content="I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this." />
+        <meta name="twitter:description" content="I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this.">
+        <meta property="og:description" content="I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css?h=1cdebe83f85b8f53e6ca">
+    
+    <link rel="stylesheet" href="https://zkc.se/giallo-dark.css" media="(prefers-color-scheme: dark)">
+    <link rel="stylesheet" href="https://zkc.se/giallo-light.css" media="(prefers-color-scheme: light)">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <picture>
+            <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/images/background_dark-480.jpg 480w, /images/background_dark-768.jpg 768w, /images/background_dark-1280.jpg 1280w, /images/background_dark-2048.jpg 2048w"
+                sizes="100vw"
+            />
+
+            <img
+                src="/images/background-1280.jpg"
+                srcset="/images/background-480.jpg 480w, /images/background-768.jpg 768w, /images/background-1280.jpg 1280w, /images/background-2048.jpg 2048w"
+                sizes="100vw"
+                alt=""
+                fetchpriority="high"
+                class="top-header-img"
+            />
+        </picture>
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https://zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article>
+<header>
+    <h1 class="title">
+        Mapping iOS devices to their iOS version
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">14 April 2024 · 572 words</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/ios/">ios</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/ipados/">ipados</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/swift/">swift</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+        <ol class="page-toc">
+            
+    
+    <li>
+        <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#encouraging-users-to-update-their-phone-or-tablet">Encouraging users to update their phone (or tablet)</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#introducing-ios-hw-to-os">Introducing ios-hw-to-os</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#some-wikipedia-some-yaml-some-json-some-rust-and-some-swift">Some Wikipedia, some YAML, some JSON, some Rust, and some Swift</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/mapping-ios-devices-to-their-ios-version/#contributions-welcome">Contributions welcome</a>
+        
+    </li>
+    
+
+        </ol>
+    
+
+<p>I have an iOS app where I need to know what the latest available iOS version for
+a given iOS/iPadOS device is, but surprisingly I couldn't find any off-the-shelf
+solutions. I'm going to publish one myself. I will probably regret this.</p>
+<span id="continue-reading"></span><h1 id="encouraging-users-to-update-their-phone-or-tablet">Encouraging users to update their phone (or tablet)</h1>
+<p>At <a rel="external" href="https://www.spiideo.com/">work</a>, we are working on an iOS/iPadOS —
+or simply iOS, even if that is somewhat incorrect —
+app that has a lot of functionality, and some of our functionality is simply better
+(the underlying platform is more bug free) or we are accessing certain platform
+APIs that are only available on later versions. So we want to push users to
+upgrade to the latest iOS version.</p>
+<p>For that we have a modal dialog that pops up whenever the user opens the app,
+but at most once every twenty-four hours.</p>
+<p>Problem is, it's popping up even though some of the users are on the latest
+available version of iOS. We have a minimum iOS version of 15, but there are
+relatively recent devices that are stuck on iOS 16. <code>iPhone10,6</code> (iPhone X) and
+<code>iPad6,8</code> (iPad Pro 12.9-in. – 1st generation) are two models that are unreasonably
+stuck on iOS/iPadOS 16.</p>
+<p>So we are asking users to upgrade to a later version of iOS than what's possible,
+and I'm sure that's at least a little annoying for them.</p>
+<h1 id="introducing-ios-hw-to-os">Introducing <code>ios-hw-to-os</code></h1>
+<p>Now there exists both a (currently incomplete) JSON file in my
+<a rel="external" href="https://github.com/bes/ios-hw-to-os">ios-hw-to-os</a> repository,
+and a simple Swift package called <a rel="external" href="https://github.com/bes/ios-hw-to-os-spm">ios-hw-to-os-spm</a>
+that makes it easy to use from your Swift or Swift-XCode application.</p>
+<p>Here's an example of how to use the API</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">import</span><span class="z-l-9 z-d-10"> IosHwToOs</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">func</span><span class="z-l-3 z-d-3"> useAllMappings</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    guard</span><span class="z-l-8 z-d-7"> let</span><span> mappings </span><span>=</span><span> IosHwToOsMappings.</span><span class="z-l-3 z-d-3">all</span><span>(</span><span>)</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">        return</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    guard</span><span class="z-l-8 z-d-7"> let</span><span> device </span><span>=</span><span> mappings.devices.</span><span class="z-l-2 z-d-1">first</span><span>(</span><span class="z-l-3 z-d-3">where</span><span>:</span><span> {</span><span class="z-l-11 z-d-10"> $0</span><span>.</span><span class="z-l-11 z-d-9">hardware</span><span> ==</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">iPhone10,1</span><span class="z-l-4 z-d-5">&quot;</span><span>}</span><span>)</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">        return</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Prints IosHwToOsDevice(hardware: &quot;iPhone10,1&quot;, version: &quot;16.7.7&quot;)</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">    print</span><span>(</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-10 z-d-7">\(</span><span class="z-l-4">device</span><span class="z-l-10 z-d-7">)</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">func</span><span class="z-l-3 z-d-3"> useOneDevice</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    guard</span><span class="z-l-8 z-d-7"> let</span><span> device </span><span>=</span><span> IosHwToOsDevice.</span><span class="z-l-8 z-d-7">get</span><span>(</span><span class="z-l-3 z-d-3">hardware</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">iPhone10,1</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">        return</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Prints IosHwToOsDevice(hardware: &quot;iPhone10,1&quot;, version: &quot;16.7.7&quot;)</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">    print</span><span>(</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-10 z-d-7">\(</span><span class="z-l-4">device</span><span class="z-l-10 z-d-7">)</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>Parsing the iOS version into a usable data structure / type is left as an exercise
+to the reader — we already have that at work — but it shouldn't be too
+hard and isn't strictly necessary from the point-of-view of the library.</p>
+<h1 id="some-wikipedia-some-yaml-some-json-some-rust-and-some-swift">Some Wikipedia, some YAML, some JSON, some Rust, and some Swift</h1>
+<p>I used Wikipedia as my source of information, specifically these pages —
+which are excellent:</p>
+<ul>
+<li><a rel="external" href="https://en.wikipedia.org/wiki/List_of_iPhone_models">https://en.wikipedia.org/wiki/List_of_iPhone_models</a></li>
+<li><a rel="external" href="https://en.wikipedia.org/wiki/List_of_iPad_models">https://en.wikipedia.org/wiki/List_of_iPad_models</a></li>
+</ul>
+<p>I manually copied the information into a YAML file, because even though I don't
+particularly like whitespace-as-strucutre, it has some features that JSON sorely
+lacks – readabilty &amp; comments. The file looks like this:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="yaml"><span class="giallo-l"><span class="z-l-11 z-d-9">d</span><span class="z-l-11 z-d-9">evices</span><span>:</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">#</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Supported iPad versions</span></span>
+<span class="giallo-l"><span>-</span><span class="z-l-11 z-d-9"> t</span><span class="z-l-11 z-d-9">ype</span><span>:</span><span class="z-l-4 z-d-5"> i</span><span class="z-l-4 z-d-5">Pad</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  v</span><span class="z-l-11 z-d-9">ersion</span><span>:</span><span class="z-l-6 z-d-8"> 17.4.1</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  s</span><span class="z-l-11 z-d-9">tatus</span><span>:</span><span class="z-l-4 z-d-5"> S</span><span class="z-l-4 z-d-5">upported</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  h</span><span class="z-l-11 z-d-9">ardware</span><span>:</span></span>
+<span class="giallo-l"><span>  -</span><span class="z-l-4 z-d-5"> i</span><span class="z-l-4 z-d-5">Pad13,18</span></span>
+<span class="giallo-l"><span>  -</span><span class="z-l-4 z-d-5"> i</span><span class="z-l-4 z-d-5">Pad13,19</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">  #</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> ...more</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">#</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Unsupported iPad versions</span></span>
+<span class="giallo-l"><span>-</span><span class="z-l-11 z-d-9"> t</span><span class="z-l-11 z-d-9">ype</span><span>:</span><span class="z-l-4 z-d-5"> i</span><span class="z-l-4 z-d-5">Pad</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  v</span><span class="z-l-11 z-d-9">ersion</span><span>:</span><span class="z-l-6 z-d-8"> 16.7.7</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  s</span><span class="z-l-11 z-d-9">tatus</span><span>:</span><span class="z-l-4 z-d-5"> U</span><span class="z-l-4 z-d-5">nsupported</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  h</span><span class="z-l-11 z-d-9">ardware</span><span>:</span></span>
+<span class="giallo-l"><span>  -</span><span class="z-l-4 z-d-5"> i</span><span class="z-l-4 z-d-5">Pad6,11</span></span>
+<span class="giallo-l"><span>  -</span><span class="z-l-4 z-d-5"> i</span><span class="z-l-4 z-d-5">Pad6,12</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">#</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> ...more</span></span></code></pre>
+<p>I then use a very small Rust program to convert the YAML into JSON. The JSON file
+has a very different structure from the YAML file. The YAML file is structured
+to be easy to update, and is sectioned by type of device, while the JSON file
+is basically just an array of all the devices without any sectioning.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="json"><span class="giallo-l"><span>{</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">  &quot;</span><span class="z-l-11 z-d-9">devices</span><span class="z-l-11 z-d-9">&quot;</span><span>:</span><span> [</span></span>
+<span class="giallo-l"><span>    {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">      &quot;</span><span class="z-l-11 z-d-9">hardware</span><span class="z-l-11 z-d-9">&quot;</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">iPad13,18</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">      &quot;</span><span class="z-l-11 z-d-9">version</span><span class="z-l-11 z-d-9">&quot;</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">17.4.1</span><span class="z-l-4 z-d-5">&quot;</span></span>
+<span class="giallo-l"><span>    }</span><span>,</span></span>
+<span class="giallo-l"><span>    {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">      &quot;</span><span class="z-l-11 z-d-9">hardware</span><span class="z-l-11 z-d-9">&quot;</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">iPad13,19</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">      &quot;</span><span class="z-l-11 z-d-9">version</span><span class="z-l-11 z-d-9">&quot;</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">17.4.1</span><span class="z-l-4 z-d-5">&quot;</span></span>
+<span class="giallo-l"><span>    }</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-4 z-l-bg2 z-d-12">.</span><span class="z-l-4 z-l-bg2 z-d-12">.</span><span class="z-l-4 z-l-bg2 z-d-12">.</span><span class="z-l-4 z-l-bg2 z-d-12">m</span><span class="z-l-4 z-l-bg2 z-d-12">o</span><span class="z-l-4 z-l-bg2 z-d-12">r</span><span class="z-l-4 z-l-bg2 z-d-12">e</span></span></code></pre>
+<p>After creating the JSON file, that one is copied over to <a rel="external" href="https://github.com/bes/ios-hw-to-os-spm">ios-hw-to-os-spm</a>
+and packaged in a Swift package.</p>
+<h1 id="contributions-welcome">Contributions welcome</h1>
+<p>Want to expand <code>ios-hw-to-os</code> to cover Apple Watch? Maybe you need devices older
+than those that can run iOS 15? Do you want to add more fields or improve the Swift
+API? PRs are welcome, and I think I left reasonably
+clear instructions on how to manage the YAML / JSON structure.</p>
+
+</article>
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2026 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

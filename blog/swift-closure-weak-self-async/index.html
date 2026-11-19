@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/swift-closure-weak-self-async/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+        <meta name="fediverse:creator" content="@ezivkovic@hachyderm.io">
+    
+    
+    
+        <title>Swift: Using [weak self] as control flow: callbacks vs async/await —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Swift: Using [weak self] as control flow: callbacks vs async/await">
+        <meta property="og:title" content="Swift: Using [weak self] as control flow: callbacks vs async/await" />
+    
+    
+        <meta name="description" content="Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. [weak self] to the rescue?" />
+        <meta name="twitter:description" content="Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. [weak self] to the rescue?">
+        <meta property="og:description" content="Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. [weak self] to the rescue?" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css?h=1cdebe83f85b8f53e6ca">
+    
+    <link rel="stylesheet" href="https://zkc.se/giallo-dark.css" media="(prefers-color-scheme: dark)">
+    <link rel="stylesheet" href="https://zkc.se/giallo-light.css" media="(prefers-color-scheme: light)">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <picture>
+            <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/images/background_dark-480.jpg 480w, /images/background_dark-768.jpg 768w, /images/background_dark-1280.jpg 1280w, /images/background_dark-2048.jpg 2048w"
+                sizes="100vw"
+            />
+
+            <img
+                src="/images/background-1280.jpg"
+                srcset="/images/background-480.jpg 480w, /images/background-768.jpg 768w, /images/background-1280.jpg 1280w, /images/background-2048.jpg 2048w"
+                sizes="100vw"
+                alt=""
+                fetchpriority="high"
+                class="top-header-img"
+            />
+        </picture>
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https://zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article>
+<header>
+    <h1 class="title">
+        Swift: Using [weak self] as control flow: callbacks vs async/await
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">21 April 2024 · 516 words</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/swift/">swift</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/async/">async</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+        <ol class="page-toc">
+            
+    
+    <li>
+        <a href="https://zkc.se/blog/swift-closure-weak-self-async/#simple-callback">Simple callback</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/swift-closure-weak-self-async/#checking-in-a-loop">Checking in a loop</a>
+        
+            <ol>
+                
+    
+    <li>
+        <a href="https://zkc.se/blog/swift-closure-weak-self-async/#attempt-1-task-cancellation">Attempt 1: Task cancellation</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/swift-closure-weak-self-async/#attempt-2-avoid-the-retain-cycle">Attempt 2: Avoid the retain cycle</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/swift-closure-weak-self-async/#attempt-3-checking-self-after-every-await">Attempt 3: checking self after every await</a>
+        
+    </li>
+    
+
+            </ol>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/swift-closure-weak-self-async/#final-words">Final words</a>
+        
+    </li>
+    
+
+        </ol>
+    
+
+<p>Instances of types in Swift, particularly when doing UI programming, are
+sensitive to retain cycles: A holds on to B and B holds on to A —
+they're both prevented from being freed. <code>[weak self]</code> to the rescue?</p>
+<span id="continue-reading"></span><h1 id="simple-callback">Simple callback</h1>
+<p>When writing UIs in Swift, mainly UIKit from the point-of-view of this post,
+it usually goes something like this:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> onButtonPress</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">        networkCall1</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span>            [</span><span class="z-l-8 z-d-7">weak</span><span class="z-l-11 z-d-10"> self</span><span>] </span><span class="z-l-8 z-d-7">in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            guard</span><span class="z-l-8 z-d-7"> let</span><span class="z-l-11 z-d-10"> self</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                return</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">            networkCall2</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span>                [</span><span class="z-l-8 z-d-7">weak</span><span class="z-l-11 z-d-10"> self</span><span>] </span><span class="z-l-8 z-d-7">in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                guard</span><span class="z-l-8 z-d-7"> let</span><span class="z-l-11 z-d-10"> self</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                    return</span></span>
+<span class="giallo-l"><span>                }</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">                self</span><span>.</span><span class="z-l-3 z-d-3">thing2</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>Each time a network call has been performed, you get a chance to check if <code>self</code>
+has been freed, and decide what to do. This is butt ugly, boring to write, and
+a pain. It does have the nice property of being a reasonably easy way to avoid
+retain cycles.</p>
+<p>It becomes a bit gnarlier when you want to write aesthetically pleasing async code,
+since we chose async / await to avoid indentation in the first place. There is no
+natural way to avoid retain cycles.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> onButtonPress</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">        Task</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            @</span><span class="z-l-8 z-d-7">MainActor</span><span class="z-l-8 z-d-7"> in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            await</span><span class="z-l-3 z-d-3"> networkCall1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            await</span><span class="z-l-3 z-d-3"> networkCall1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>.</span><span class="z-l-3 z-d-3">thing2</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p><code>self</code> will be retained until all the network calls are done. This might not be
+a big deal, so let's look at a more complicated example.</p>
+<h1 id="checking-in-a-loop">Checking in a loop</h1>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> loop</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">        networkCall</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span>            [</span><span class="z-l-8 z-d-7">weak</span><span class="z-l-11 z-d-10"> self</span><span>] </span><span class="z-l-8 z-d-7">in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            guard</span><span class="z-l-8 z-d-7"> let</span><span class="z-l-11 z-d-10"> self</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                return</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">            //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Create a timer that fires after 5s</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">            delay</span><span>(</span><span class="z-l-3 z-d-3">by</span><span>:</span><span class="z-l-6 z-d-8"> 5.0</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span>                [</span><span class="z-l-8 z-d-7">weak</span><span class="z-l-11 z-d-10"> self</span><span>] </span><span class="z-l-8 z-d-7">in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                guard</span><span class="z-l-8 z-d-7"> let</span><span class="z-l-11 z-d-10"> self</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                    return</span></span>
+<span class="giallo-l"><span>                }</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">                self</span><span>.</span><span class="z-l-3 z-d-3">loop</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>The loop above will be terminated as soon as the UI is freed, which is what we
+wanted.</p>
+<p>What seems to be a nice way to write that using async?</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> loop</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">        Task</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            @</span><span class="z-l-8 z-d-7">MainActor</span><span class="z-l-8 z-d-7"> in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            repeat</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                await</span><span class="z-l-11 z-d-10"> self</span><span>.</span><span class="z-l-3 z-d-3">networkCall</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">                self</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                try</span><span>?</span><span class="z-l-8 z-d-7"> await</span><span> Task.</span><span class="z-l-3 z-d-3">sleep</span><span>(</span><span class="z-l-3 z-d-3">nanoseconds</span><span>:</span><span class="z-l-6 z-d-8"> 5_000_000_000</span><span>)</span></span>
+<span class="giallo-l"><span>            }</span><span class="z-l-8 z-d-7"> while</span><span> !</span><span>Task.isCancelled</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>Really nice looking, but now we need to handle the fact that we can't stop this loop
+in any reasonable way.</p>
+<h2 id="attempt-1-task-cancellation">Attempt 1: Task cancellation</h2>
+<p>Our first attempt might be storing the <code>Task</code> and cancelling it when needed.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    var</span><span> loopTask:</span><span> Task</span><span>&lt;</span><span>(</span><span>)</span><span>, </span><span class="z-l-2 z-d-10">Error</span><span>&gt;</span><span>?</span></span>
+<span class="giallo-l"><span>    </span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> loop</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">        self</span><span>.</span><span class="z-l-11 z-d-9">loopTask</span><span> =</span><span class="z-l-3 z-d-3"> Task</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            @</span><span class="z-l-8 z-d-7">MainActor</span><span class="z-l-8 z-d-7"> in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            repeat</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                await</span><span class="z-l-3 z-d-3"> networkCall</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">                self</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                try</span><span>?</span><span class="z-l-8 z-d-7"> await</span><span> Task.</span><span class="z-l-3 z-d-3">sleep</span><span>(</span><span class="z-l-3 z-d-3">nanoseconds</span><span>:</span><span class="z-l-6 z-d-8"> 5_000_000_000</span><span>)</span></span>
+<span class="giallo-l"><span>            }</span><span class="z-l-8 z-d-7"> while</span><span> !</span><span>Task.isCancelled</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>    </span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> cancel</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">        self</span><span>.</span><span class="z-l-11 z-d-9">loopTask</span><span>?</span><span>.</span><span class="z-l-3 z-d-3">cancel</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>This will work if we make sure to call <code>cancel</code> on <em>every</em> path that can leave
+our <code>UIViewController</code>. This might be feasible, but it's not very maintainable. Seven years from
+now the next programmer updating the <code>UIViewController</code> will need to do the right thing.</p>
+<h2 id="attempt-2-avoid-the-retain-cycle">Attempt 2: Avoid the retain cycle</h2>
+<p>Our second attempt is to avoid a retain cycle, which might look like this:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> loop</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">        Task</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            @</span><span class="z-l-8 z-d-7">MainActor</span><span> [</span><span class="z-l-8 z-d-7">weak</span><span class="z-l-11 z-d-10"> self</span><span>]</span><span class="z-l-8 z-d-7"> in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            await</span><span class="z-l-3 z-d-3"> networkCall1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>?</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            await</span><span class="z-l-3 z-d-3"> networkCall2</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>?</span><span>.</span><span class="z-l-3 z-d-3">thing2</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            try</span><span>?</span><span class="z-l-8 z-d-7"> await</span><span> Task.</span><span class="z-l-3 z-d-3">sleep</span><span>(</span><span class="z-l-3 z-d-3">nanoseconds</span><span>:</span><span class="z-l-6 z-d-8"> 5_000_000_000</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>?</span><span>.</span><span class="z-l-3 z-d-3">loop</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>This is an uncomplicated example, but notice how we'll keep doing network calls
+even if <code>self</code> has been freed. The only thing we'll skip are the function calls
+<code>self?.thing1()</code> and <code>self?.thing2()</code>. This may be undesirable!</p>
+<p>Another issue with this approach is that since we spawn new <code>Task</code>s all the time,
+it's not immediately possible (without some work) to cancel a long chain or tree
+of these.</p>
+<h2 id="attempt-3-checking-self-after-every-await">Attempt 3: checking self after every await</h2>
+<p>It's possible to check the state of <code>self</code> with continuous if-statements, but then
+we're writing icky code again:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="swift"><span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> SomeUI</span><span>:</span><span class="z-l-9 z-d-10"> UIViewController</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    func</span><span class="z-l-3 z-d-3"> loop</span><span>(</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">        Task</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            @</span><span class="z-l-8 z-d-7">MainActor</span><span> [</span><span class="z-l-8 z-d-7">weak</span><span class="z-l-11 z-d-10"> self</span><span>]</span><span class="z-l-8 z-d-7"> in</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            await</span><span class="z-l-3 z-d-3"> networkCall1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            if</span><span class="z-l-8 z-d-7"> let</span><span class="z-l-11 z-d-10"> self</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">                self</span><span>.</span><span class="z-l-3 z-d-3">thing1</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>            }</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                return</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            await</span><span class="z-l-3 z-d-3"> networkCall2</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            if</span><span class="z-l-8 z-d-7"> let</span><span class="z-l-11 z-d-10"> self</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">                self</span><span>.</span><span class="z-l-3 z-d-3">thing2</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>            }</span><span class="z-l-8 z-d-7"> else</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">                return</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            try</span><span>?</span><span class="z-l-8 z-d-7"> await</span><span> Task.</span><span class="z-l-3 z-d-3">sleep</span><span>(</span><span class="z-l-3 z-d-3">nanoseconds</span><span>:</span><span class="z-l-6 z-d-8"> 5_000_000_000</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            self</span><span>?</span><span>.</span><span class="z-l-3 z-d-3">loop</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre><h1 id="final-words">Final words</h1>
+<p>The lifecycle of UI in Swift in general, and UIKit in particular is substandard.
+There's a lot to be said about React but at least it's possible to be able to
+do cleanup using a <code>useEffect</code>.</p>
+<p>This is harder than I wish it was in Swift. In the end, we're responsible for
+writing code that works well, but it should be easier to get the system
+to help out than it is in Swift / iOS.</p>
+<p>There are probably more ways to solve the retain cycle problem than the ones
+listed above, but we have at least three tools with different tradeoffs.</p>
+<p>Is there an even better way? Let me know.</p>
+
+</article>
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2026 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

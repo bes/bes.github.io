@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/android-tcpdump/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+        <meta name="fediverse:creator" content="@ezivkovic@hachyderm.io">
+    
+    
+    
+        <title>Let&#39;s dump some tcp - Android packet sniffing —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Let&#39;s dump some tcp - Android packet sniffing">
+        <meta property="og:title" content="Let&#39;s dump some tcp - Android packet sniffing" />
+    
+    
+        <meta name="description" content="Let's hold hands while we take a dump together!" />
+        <meta name="twitter:description" content="Let's hold hands while we take a dump together!">
+        <meta property="og:description" content="Let's hold hands while we take a dump together!" />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css?h=1cdebe83f85b8f53e6ca">
+    
+    <link rel="stylesheet" href="https://zkc.se/giallo-dark.css" media="(prefers-color-scheme: dark)">
+    <link rel="stylesheet" href="https://zkc.se/giallo-light.css" media="(prefers-color-scheme: light)">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <picture>
+            <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/images/background_dark-480.jpg 480w, /images/background_dark-768.jpg 768w, /images/background_dark-1280.jpg 1280w, /images/background_dark-2048.jpg 2048w"
+                sizes="100vw"
+            />
+
+            <img
+                src="/images/background-1280.jpg"
+                srcset="/images/background-480.jpg 480w, /images/background-768.jpg 768w, /images/background-1280.jpg 1280w, /images/background-2048.jpg 2048w"
+                sizes="100vw"
+                alt=""
+                fetchpriority="high"
+                class="top-header-img"
+            />
+        </picture>
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https://zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article>
+<header>
+    <h1 class="title">
+        Let&#39;s dump some tcp - Android packet sniffing
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">12 October 2016 · 553 words</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/android/">android</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/tcpdump/">tcpdump</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/wireshark/">wireshark</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/debugging/">debugging</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+        <ol class="page-toc">
+            
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#background">Background</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#goals">Goals</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#prerequisites">Prerequisites</a>
+        
+            <ol>
+                
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#ubuntu-xenial-in-vagrant">Ubuntu Xenial in Vagrant</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#ubuntu-packages">Ubuntu packages</a>
+        
+    </li>
+    
+
+            </ol>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#build-tcpdump">Build tcpdump</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#install-tcpdump">Install tcpdump</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#run-tcpdump">Run tcpdump</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#analyze-the-dump">Analyze the dump</a>
+        
+            <ol>
+                
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#wireshark-basics">Wireshark basics</a>
+        
+    </li>
+    
+
+            </ol>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/android-tcpdump/#epilogue">Epilogue</a>
+        
+    </li>
+    
+
+        </ol>
+    
+
+<p>Let's hold hands while we take a dump together!</p>
+<span id="continue-reading"></span><h1 id="background">Background</h1>
+<p>If you don't want to download any old tcpdump binary file and put it all
+up in your rooted Android phone, because reasons, this guide might be for
+you.</p>
+<h1 id="goals">Goals</h1>
+<ul>
+<li>Build tcpdump</li>
+<li>Install tcpdump</li>
+<li>Run tcpdump</li>
+<li>Analyze the dump</li>
+</ul>
+<p>As a bonus, I want to explain how to do this relatively platform independently.</p>
+<h1 id="prerequisites">Prerequisites</h1>
+<p>As I said, platform independently. Here we go!</p>
+<p>Unfortunately, platform independent means installing a lot of software.
+If you are already on a relatively new version of Ubuntu, you can skip to
+"Ubuntu packages" below.</p>
+<h2 id="ubuntu-xenial-in-vagrant">Ubuntu Xenial in Vagrant</h2>
+<p>Start by installing <a rel="external" href="https://www.vagrantup.com/downloads.html">Vagrant</a>,
+and then dump this into a file called Vagrantfile somewhere on your computer:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">Vagrant.configure(2</span><span>) </span><span class="z-l-8 z-d-7">do</span><span> |</span><span class="z-l-3 z-d-3">config</span><span>|</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3"> config.vm.box</span><span class="z-l-4 z-d-5"> =</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">ubuntu/xenial64</span><span class="z-l-4 z-d-5">&quot;</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i"> #</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Edit this line so that it fits your system configuration</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3"> config.vm.synced_folder</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">/My/host/computer/folder/Downloads</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">,</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">/downloads</span><span class="z-l-4 z-d-5">&quot;</span><span> </span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">end</span></span></code></pre>
+<p>Now open your platform dependent terminal (cmd? xterm? iterm?) and run:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-2 z-d-1">cd</span><span class="z-l-4 z-d-5"> Whatever/Directory/you/chose</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">vagrant</span><span class="z-l-4 z-d-5"> up</span></span></code></pre>
+<p>Wait for a longish while, until vagrant gets its affairs into order then run:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">vagrant</span><span class="z-l-4 z-d-5"> ssh</span></span></code></pre>
+<p>When we have entered the ubuntu shell we can prepare the ubuntu packages.</p>
+<h2 id="ubuntu-packages">Ubuntu packages</h2>
+<p>These packages need to be installed before we continue</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">sudo</span><span class="z-l-4 z-d-5"> apt-get</span><span class="z-l-4 z-d-5"> install</span><span class="z-l-4 z-d-5"> gcc-arm-linux-gnueabi</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">sudo</span><span class="z-l-4 z-d-5"> apt-get</span><span class="z-l-4 z-d-5"> install</span><span class="z-l-4 z-d-5"> make</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">sudo</span><span class="z-l-4 z-d-5"> apt-get</span><span class="z-l-4 z-d-5"> install</span><span class="z-l-4 z-d-5"> flex</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">sudo</span><span class="z-l-4 z-d-5"> apt-get</span><span class="z-l-4 z-d-5"> install</span><span class="z-l-4 z-d-5"> byacc</span></span></code></pre><h1 id="build-tcpdump">Build tcpdump</h1>
+<p>Let's continue in our ubuntu shell</p>
+<p>Copy this into an executable script file or just run it line by line:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> TCPDUMP</span><span class="z-d-1">=</span><span class="z-l-6 z-d-8">4.7.4</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> LIBPCAP</span><span class="z-d-1">=</span><span class="z-l-6 z-d-8">1.7.4</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">wget</span><span class="z-l-4 z-d-5"> http://www.tcpdump.org/release/tcpdump-</span><span class="z-l-11 z-d-9">$</span><span class="z-l-11 z-d-9">TCPDUMP</span><span class="z-l-4 z-d-5">.tar.gz</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">wget</span><span class="z-l-4 z-d-5"> http://www.tcpdump.org/release/libpcap-</span><span class="z-l-11 z-d-9">$</span><span class="z-l-11 z-d-9">LIBPCAP</span><span class="z-l-4 z-d-5">.tar.gz</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">tar</span><span class="z-l-4 z-d-5"> zxvf</span><span class="z-l-4 z-d-5"> tcpdump-</span><span class="z-l-11 z-d-9">$</span><span class="z-l-11 z-d-9">TCPDUMP</span><span class="z-l-4 z-d-5">.tar.gz</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">tar</span><span class="z-l-4 z-d-5"> zxvf</span><span class="z-l-4 z-d-5"> libpcap-</span><span class="z-l-11 z-d-9">$</span><span class="z-l-11 z-d-9">LIBPCAP</span><span class="z-l-4 z-d-5">.tar.gz</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> CC</span><span class="z-d-1">=</span><span class="z-l-11 z-d-9">arm-linux-gnueabi-gcc</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">cd</span><span class="z-l-4 z-d-5"> libpcap-</span><span class="z-l-11 z-d-9">$</span><span class="z-l-11 z-d-9">LIBPCAP</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">./configure</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">-host=arm-linux</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">-with-pcap=linux</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">make</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">cd</span><span class="z-l-4 z-d-5"> ..</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">cd</span><span class="z-l-4 z-d-5"> tcpdump-</span><span class="z-l-11 z-d-9">$</span><span class="z-l-11 z-d-9">TCPDUMP</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> ac_cv_linux_vers</span><span class="z-d-1">=</span><span class="z-l-6 z-d-8">2</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> CFLAGS</span><span class="z-d-1">=</span><span class="z-l-6 z-d-8">-static</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> CPPFLAGS</span><span class="z-d-1">=</span><span class="z-l-6 z-d-8">-static</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">export</span><span class="z-l-11 z-d-9"> LDFLAGS</span><span class="z-d-1">=</span><span class="z-l-6 z-d-8">-static</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">./configure</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">-host=arm-linux</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">-disable-ipv6</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">make</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">arm-linux-gnueabi-strip</span><span class="z-l-4 z-d-5"> tcpdump</span></span></code></pre>
+<p>Source: <a rel="external" href="http://www.androidtcpdump.com/android-tcpdump/compile">androidtcpdump.com</a>.</p>
+<p>After you have successfully built tcpdump, copy it to the shared directory
+we set up in the Vagrantfile, or if you are on your native box copy it to
+any directory you like:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">cp</span><span class="z-l-4 z-d-5"> tcpdump-4.7.4/tcpdump</span><span class="z-l-4 z-d-5"> /downloads</span></span></code></pre>
+<p>On your native machine, go to the directory that "/downloads" in Vagrant
+(or your local machine) points to.</p>
+<h1 id="install-tcpdump">Install tcpdump</h1>
+<p>Unfortunately, this is the point where you need something that I don't
+have time to explain: A rooted Android phone. Without root you can't
+push tcpdump, and consequently you can't run tcpdump.</p>
+<p>First let's find a directory to push to, sdcard1 is available on some
+modern Android platforms.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">adb</span><span class="z-l-4 z-d-5"> shell</span><span class="z-l-4 z-d-5"> ls</span></span>
+<span class="giallo-l"><span>[</span><span>... long list of files ...</span><span>]</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">sdcard</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">sdcard1</span></span>
+<span class="giallo-l"><span>[</span><span>... probably more files ...</span><span>]</span></span></code></pre>
+<p>As I said, I want <code>sdcard1</code>.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">adb</span><span class="z-l-4 z-d-5"> root</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">adb</span><span class="z-l-4 z-d-5"> remount</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">adb</span><span class="z-l-4 z-d-5"> push</span><span class="z-l-4 z-d-5"> tcpdump</span><span class="z-l-4 z-d-5"> /sdcard1/tcpdump</span></span></code></pre><h1 id="run-tcpdump">Run tcpdump</h1>
+<p>Let's drop into adb shell</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">adb</span><span class="z-l-4 z-d-5"> shell</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">cd</span><span class="z-l-4 z-d-5"> sdcard1</span></span></code></pre>
+<p>From here we can run tcpdump</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">tcpdump</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">i</span><span class="z-l-4 z-d-5"> any</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">p</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">s</span><span class="z-l-6 z-d-8"> 0</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">w</span><span class="z-l-4 z-d-5"> /sdcard1/capture.pcap</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">tcpdump:</span><span class="z-l-4 z-d-5"> listening</span><span class="z-l-4 z-d-5"> on</span><span class="z-l-4 z-d-5"> any,</span><span class="z-l-4 z-d-5"> link-type</span><span class="z-l-4 z-d-5"> LINUX_SLL</span><span> (Linux</span><span class="z-l-4 z-d-5"> cooked</span><span>), capture size 65535 bytes</span></span></code></pre>
+<p>This will block as long as you want to do packet capture.</p>
+<p>Press Ctrl+C to stop listening. Pressing Ctrl+C might make tcpdump miss some buffered packets, so listen a while longer than you need to (do some web surfing then press Ctrl+C).</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span>(</span><span class="z-l-3 z-d-3">Ctrl+C</span><span class="z-l-4 z-d-5"> pressed</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">28220</span><span class="z-l-4 z-d-5"> packets</span><span class="z-l-4 z-d-5"> captured</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">35119</span><span class="z-l-4 z-d-5"> packets</span><span class="z-l-4 z-d-5"> received</span><span class="z-l-4 z-d-5"> by</span><span class="z-l-4 z-d-5"> filter</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">6899</span><span class="z-l-4 z-d-5"> packets</span><span class="z-l-4 z-d-5"> dropped</span><span class="z-l-4 z-d-5"> by</span><span class="z-l-4 z-d-5"> kernel</span></span></code></pre>
+<p>Here's some info about the tcpdump options:</p>
+<ul>
+<li><code>-i any</code>: listen on any network interface</li>
+<li><code>-p</code>: disable promiscuous mode (doesn't work anyway)</li>
+<li><code>-s 0</code>: capture the entire packet</li>
+<li><code>-w</code>: write packets to a file (rather than printing to stdout)</li>
+</ul>
+<p>Drop out of the adb shell</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-2 z-d-1">exit</span></span></code></pre>
+<p>Pull the file to your local machine</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-3 z-d-3">adb</span><span class="z-l-4 z-d-5"> pull</span><span class="z-l-4 z-d-5"> /sdcard1/capture.pcap</span></span></code></pre><h1 id="analyze-the-dump">Analyze the dump</h1>
+<p>Download <a rel="external" href="https://www.wireshark.org/">Wireshark</a> and install it.</p>
+<p>Open the file <code>capture.pcap</code> in Wireshark. Unfortunately, how to analyze it in Wireshark
+is beyond the scope of this guide, but I'll give you some hints.</p>
+<h2 id="wireshark-basics">Wireshark basics</h2>
+<p>Load the file using File -&gt; Open.</p>
+<p>In the horizontal search bar / text field that spans the entire width of
+the application window, you can write queries for filtering the dump.</p>
+<p>A simple filter query is simply the name of the protocol you want to analyze,
+e.g. <code>http</code>.</p>
+<p>After listing all <code>http</code> packets, you can get more information for a specific
+row / call by right clicking that row and selecting e.g. Follow &gt; HTTP Stream.</p>
+<p>After following a stream, go back to the filter list by writing <code>http</code> in
+the search field again.</p>
+<h1 id="epilogue">Epilogue</h1>
+<p>All goals (kind of) achieved!</p>
+
+</article>
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2026 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

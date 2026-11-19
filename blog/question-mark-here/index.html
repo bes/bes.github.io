@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/question-mark-here/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+        <meta name="fediverse:creator" content="@ezivkovic@hachyderm.io">
+    
+    
+    
+        <title>Array indexing is a footgun and ? is here to help you —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Array indexing is a footgun and ? is here to help you">
+        <meta property="og:title" content="Array indexing is a footgun and ? is here to help you" />
+    
+    
+        <meta name="description" content="A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark." />
+        <meta name="twitter:description" content="A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark.">
+        <meta property="og:description" content="A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css?h=1cdebe83f85b8f53e6ca">
+    
+    <link rel="stylesheet" href="https://zkc.se/giallo-dark.css" media="(prefers-color-scheme: dark)">
+    <link rel="stylesheet" href="https://zkc.se/giallo-light.css" media="(prefers-color-scheme: light)">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <picture>
+            <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/images/background_dark-480.jpg 480w, /images/background_dark-768.jpg 768w, /images/background_dark-1280.jpg 1280w, /images/background_dark-2048.jpg 2048w"
+                sizes="100vw"
+            />
+
+            <img
+                src="/images/background-1280.jpg"
+                srcset="/images/background-480.jpg 480w, /images/background-768.jpg 768w, /images/background-1280.jpg 1280w, /images/background-2048.jpg 2048w"
+                sizes="100vw"
+                alt=""
+                fetchpriority="high"
+                class="top-header-img"
+            />
+        </picture>
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https://zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article>
+<header>
+    <h1 class="title">
+        Array indexing is a footgun and ? is here to help you
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">10 August 2022 · 715 words</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/typescript/">typescript</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/rust/">rust</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/programming/">programming</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+        <ol class="page-toc">
+            
+    
+    <li>
+        <a href="https://zkc.se/blog/question-mark-here/#javascript-is-unusable">JavaScript is unusable</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/question-mark-here/#and-typescript-is-unsound">And TypeScript is unsound</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/question-mark-here/#and-typescript-doesn-t-seem-to-care-that-it-s-unsound">And TypeScript doesn&#39;t seem to care that it&#39;s unsound</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/question-mark-here/#sound-programming-languages-love-runtime-errors">Sound programming languages love runtime errors</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/question-mark-here/#back-to-the-initial-review">Back to the initial review</a>
+        
+    </li>
+    
+
+        </ol>
+    
+
+<p>A short look at why array indexing  bugs happen, and ?uestioning why languages
+don't do more. I need you to use the nearest question mark.</p>
+<span id="continue-reading"></span><pre class="giallo z-l-code z-d-code" ><code data-lang="typescript"><span class="giallo-l"><span class="z-l-3 z-d-3">useEffect</span><span>(</span><span>(</span><span>)</span><span class="z-l-8 z-d-7"> =&gt;</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    if</span><span> (</span><span class="z-d-10">activeAccount</span><span>?.</span><span class="z-l-11 z-d-9">id</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-d-10">        cancelable</span><span>.</span><span class="z-l-3 z-d-3">exec</span><span>(</span></span>
+<span class="giallo-l"><span class="z-l-4 z-d-5">            &quot;</span><span class="z-l-4 z-d-5">id</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span></span>
+<span class="giallo-l"><span class="z-d-10">            networking</span><span>.</span><span class="z-l-3 z-d-3">search</span><span>(</span></span>
+<span class="giallo-l"><span class="z-d-9">                param1</span><span>,</span></span>
+<span class="giallo-l"><span class="z-d-9">                param2</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">                undefined</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">                undefined</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">                undefined</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-4 z-d-5">                &quot;</span><span class="z-l-4 z-d-5">param3</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span></span>
+<span class="giallo-l"><span class="z-d-9">                param4</span><span>,</span></span>
+<span class="giallo-l"><span class="z-d-9">                param5</span><span>,</span></span>
+<span class="giallo-l"><span class="z-l-4 z-d-5">                &quot;</span><span class="z-l-4 z-d-5">param6</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span></span>
+<span class="giallo-l"><span class="z-d-9">                param7</span><span>,</span></span>
+<span class="giallo-l"><span>            )</span><span>,</span></span>
+<span class="giallo-l"><span>        )</span><span>.</span><span class="z-l-3 z-d-3">then</span><span>(</span><span>(</span><span class="z-d-9 z-d-i">result</span><span>)</span><span class="z-l-8 z-d-7"> =&gt;</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            if</span><span> (</span><span class="z-d-10">result</span><span>.</span><span class="z-l-11 z-d-10">content</span><span>.</span><span class="z-l-11 z-d-9">length</span><span class="z-l-2 z-d-1"> &gt;</span><span class="z-l-6 z-d-8"> 0</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">                setShowCreateTopLevel</span><span>(</span><span class="z-l-6 z-d-8">true</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            if</span><span> (</span><span class="z-d-10">result</span><span>.</span><span class="z-l-11 z-d-9">content</span><span>[</span><span class="z-l-6 z-d-8">0</span><span>]</span><span>.</span><span class="z-l-11 z-d-9">levelId</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">                setTopLevelId</span><span>(</span><span class="z-d-10">result</span><span>.</span><span class="z-l-11 z-d-9">content</span><span>[</span><span class="z-l-6 z-d-8">0</span><span>]</span><span>.</span><span class="z-l-11 z-d-9">levelId</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span>        }</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span><span>,</span><span> [</span><span>]</span><span>)</span><span>;</span></span></code></pre>
+<p>Imagine reviewing this code, a normal and good thing to do, and finding nothing
+wrong. Imagine this being one of a handful of changes in different files.
+My money is you don't find the bug.</p>
+<p>Personally, I think my brain would believe that the first bounds check
+<code>result.content.length &gt; 0</code> was a refinement, and that the code was working
+as it should. Workload goes up, review quality goes down.</p>
+<p>But this bug is completely unnecessary, especially in modern JavaScript,
+TypeScript and Rust. Unfortunately, the compilers for TypeScript and Rust
+won't help you find the bug. But I'll come back to the bug in a minute.</p>
+<p>I like Rust and I like TypeScript but in different ways and for different reasons.</p>
+<p>I like Rust because of <span class="system-font"><a rel="external" title="Parse Don't Validate" href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">P̸̡̿a̸̮̋ṛ̷͝s̴̺̉͝e̸͕̖͆̕ ̴̪̐́Ḍ̶̹̒o̵̲̹͊̽n̷͕͂'̸̨̉t̸̖̚ ̵̕͜Ṿ̴̬͛a̴̤̍̕l̶͇͘i̴̻̐d̷̙̣̈a̶͕͛͛t̶̬̀͘ē̶̲̟</a></span>,
+<a rel="external" href="https://en.wikipedia.org/wiki/Nominal_type_system">Nominal Types</a>,
+and great error handling.</p>
+<p>I like TypeScript because JavaScript is unusable and TypeScript is marginally less
+unusable.</p>
+<div class="aside">
+<div class="aside-title"><p>But is it really unusable?</p>
+</div>
+<p>Yes it is extremely unusable.</p>
+</div>
+<h1 id="javascript-is-unusable">JavaScript is unusable</h1>
+<p>Unusable is a <i>strong word</i> — Like most other scripting languages,
+JavaScript has the following properties:</p>
+<ul>
+<li>Having more than 50 lines of code makes it effectively write-only.</li>
+<li>Every person added to a project introduces bugs at an increasingly exponential rate.</li>
+</ul>
+<p>TypeScript doesn't have those same properties. As long as you are diligent about
+your design, use types everywhere, and turn on all the <code>strict</code> checks the compiler has,
+you can keep adding people and have (slightly sub-)linear increases in productivity.</p>
+<p>But TypeScript has so many paper cuts. I'm figuratively bleeding.</p>
+<h1 id="and-typescript-is-unsound">And TypeScript is unsound</h1>
+<p>TypeScript is <a rel="external" href="https://effectivetypescript.com/2021/05/06/unsoundness/">wildly unsound</a>,
+and it will let you do this:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="typescript"><span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">//</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Function calls don&#39;t invalidate refinements</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">class</span><span class="z-l-9 z-d-10"> UnsoundRefinement</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    private</span><span class="z-d-9"> mutable</span><span class="z-l-2 z-d-7">?</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> string</span><span>;</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">    refineMe</span><span>(</span><span>)</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> void</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">        this</span><span>.</span><span class="z-l-11 z-d-9">mutable</span><span class="z-l-2 z-d-1"> =</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">Not undefined</span><span class="z-l-4 z-d-5">&quot;</span><span>;</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">        if</span><span> (</span><span class="z-l-11 z-d-10">this</span><span>.</span><span class="z-l-11 z-d-9">mutable</span><span class="z-l-2 z-d-1"> !==</span><span class="z-l-6 z-d-8"> undefined</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">            this</span><span>.</span><span class="z-l-3 z-d-3">clearMutable</span><span>(</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">            //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> This is a runtime Error</span></span>
+<span class="giallo-l"><span class="z-d-10">            console</span><span>.</span><span class="z-l-3 z-d-3">log</span><span>(</span><span class="z-l-11 z-d-10">this</span><span>.</span><span class="z-l-11 z-d-10">mutable</span><span>.</span><span class="z-l-11 z-d-9">length</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>        }</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">    clearMutable</span><span>(</span><span>)</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> void</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-10">        this</span><span>.</span><span class="z-l-11 z-d-9">mutable</span><span class="z-l-2 z-d-1"> =</span><span class="z-l-6 z-d-8"> undefined</span><span>;</span></span>
+<span class="giallo-l"><span>    }</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre><h1 id="and-typescript-doesn-t-seem-to-care-that-it-s-unsound">And TypeScript doesn't seem to care that it's unsound</h1>
+<p>Here's TypeScript just throwing its hands in the air:</p>
+<div class="aside">
+<div class="aside-title"><p>strictFunctionTypes</p>
+</div>
+<p>During development of this feature, we discovered a large number of inherently
+unsafe class hierarchies, including some in the DOM. Because of this, the
+setting only applies to functions written in function syntax, not to those in method syntax.</p>
+<p>— <a rel="external" href="https://www.typescriptlang.org/tsconfig#strictFunctionTypes">The TypeScript Documentation</a></p>
+</div>
+<p>The reason I know about this is because I managed to run into it
+<a rel="external" href="https://stackoverflow.com/q/52641612/816017">very early</a> in my TypeScript "career".</p>
+<h1 id="sound-programming-languages-love-runtime-errors">Sound programming languages love runtime errors</h1>
+<p>I don't like runtime errors. I'll be clear and state that I'll take a runtime
+error (or panic) over unsoundness every day of the week, but I don't have to like it.</p>
+<p>C programmers claim that they can allocate and deallocate memory manually and
+that it's "fine, actually" (it's not). Rust and TypeScript programmers claim that
+they can decide when to check array lengths before accessing elements and that
+"it's fine actually" (it is fine actually) — BUT I DON'T LIKE IT.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="rust"><span class="giallo-l"><span class="z-l-8 z-d-7">fn</span><span class="z-l-3 z-d-3"> feeling_lucky</span><span>(</span><span class="z-l-11 z-d-9">slice</span><span>:</span><span> &amp;</span><span>[</span><span>&amp;</span><span class="z-l-9 z-d-10">str</span><span>]</span><span>)</span><span> -&gt;</span><span class="z-l-9 z-d-10"> usize</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Runtime panic if slice is shorter than 1000 elements.</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> The panic is on the index access, not the .len() call.</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">    slice</span><span>[</span><span class="z-l-6 z-d-8">999</span><span>]</span><span>.</span><span class="z-l-3 z-d-3">len</span><span>(</span><span>)</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre><pre class="giallo z-l-code z-d-code" ><code data-lang="typescript"><span class="giallo-l"><span class="z-l-8 z-d-7">const</span><span class="z-l-3 z-d-3"> feelingLucky</span><span class="z-l-2 z-d-1"> =</span><span> (</span><span class="z-d-9 z-d-i">arr</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> string</span><span>[</span><span>]</span><span>)</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> number</span><span class="z-l-8 z-d-7"> =&gt;</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> Throws a runtime error if slice is shorter than 1000 elements.</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> The panic is on the .length access, since index-out-of bounds returns undefined.</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    return</span><span class="z-d-9"> arr</span><span>[</span><span class="z-l-6 z-d-8">999</span><span>]</span><span>.</span><span class="z-l-11 z-d-9">length</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>There is no reason why the <code>?</code> operator can't just solve this. Both of them.
+The type signatures will be different, but that's ok with me.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="rust"><span class="giallo-l"><span class="z-l-8 z-d-7">fn</span><span class="z-l-3 z-d-3"> am_lucky_actually</span><span>(</span><span class="z-l-11 z-d-9">slice</span><span>:</span><span> &amp;</span><span>[</span><span>&amp;</span><span class="z-l-9 z-d-10">str</span><span>]</span><span>)</span><span> -&gt;</span><span class="z-l-2 z-d-10"> Option</span><span>&lt;</span><span class="z-l-9 z-d-10">usize</span><span>&gt;</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> This isn&#39;t actually valid rust, can&#39;t use ? here:</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">    slice</span><span>[</span><span class="z-l-6 z-d-8">999</span><span>]</span><span>?</span><span>.</span><span class="z-l-3 z-d-3">map</span><span>(</span><span class="z-d-1">|</span><span class="z-l-11 z-d-9">v</span><span class="z-d-1">|</span><span class="z-l-11 z-d-9"> v</span><span>.</span><span class="z-l-3 z-d-3">len</span><span>(</span><span>)</span><span>)</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> This is what you would need to write today:</span></span>
+<span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">    //</span><span class="z-l-7 z-l-i z-d-4 z-d-i"> slice[999].get()?.map(|v| v.len())</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre><pre class="giallo z-l-code z-d-code" ><code data-lang="typescript"><span class="giallo-l"><span class="z-l-8 z-d-7">const</span><span class="z-l-3 z-d-3"> amLuckyActually</span><span class="z-l-2 z-d-1"> =</span><span> (</span><span class="z-d-9 z-d-i">arr</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> number</span><span>[</span><span>]</span><span>)</span><span class="z-l-2">:</span><span class="z-l-2 z-d-10"> number</span><span class="z-l-2"> |</span><span class="z-l-2 z-d-10"> undefined</span><span class="z-l-8 z-d-7"> =&gt;</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">    return</span><span class="z-d-9"> arr</span><span>[</span><span class="z-l-6 z-d-8">999</span><span>]</span><span>?.</span><span class="z-l-11 z-d-9">length</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>I personally think array indexing shouldn't lead to runtime crashes except
+when doing <code>.unwrap()</code>, <code>!</code>. In Rust it could be argued that you could skip
+the checking step in <code>unsafe</code> code, but <code>get_unchecked</code> already exists so
+<i>big shrug</i>, I guess.</p>
+<p>Since TypeScript already has (broken) refinement, it could just allow infallible
+array indexing when it can prove that the access will be in bounds. Maybe Rust
+can get that too, some day. Refinement is really neat, and I wish it wasn't
+broken in TypeScript.</p>
+<h1 id="back-to-the-initial-review">Back to the initial review</h1>
+<p>Load bearing code —</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="typescript"><span class="giallo-l"><span class="z-l-8 z-d-7">            if</span><span> (</span><span class="z-d-10">result</span><span>.</span><span class="z-l-11 z-d-10">content</span><span>.</span><span class="z-l-11 z-d-9">length</span><span class="z-l-2 z-d-1"> &gt;</span><span class="z-l-6 z-d-8"> 0</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">                setShowCreateTopLevel</span><span>(</span><span class="z-l-6 z-d-8">true</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>            }</span></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">            if</span><span> (</span><span class="z-d-10">result</span><span>.</span><span class="z-l-11 z-d-9">content</span><span>[</span><span class="z-l-6 z-d-8">0</span><span>]</span><span>.</span><span class="z-l-11 z-d-9">levelId</span><span>)</span><span> {</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">                setTopLevelId</span><span>(</span><span class="z-d-10">result</span><span>.</span><span class="z-l-11 z-d-9">content</span><span>[</span><span class="z-l-6 z-d-8">0</span><span>]</span><span>.</span><span class="z-l-11 z-d-9">levelId</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>            }</span></span></code></pre>
+<p>The length check doesn't wrap the array indexing call.</p>
+<p>I easily miss details like this, and I would expect the compiler to have my back.
+It does, in a sense, have my back (it crashes), but I resent that I have to find
+this error in <a rel="external" href="https://sentry.io">Sentry</a>. 2500 crashes in one week, just as
+everyone is enjoying their vacation.</p>
+<p>It's not a big deal. It really isn't. But if I could choose, I think I'd like
+to have a compiler that didn't let me crash unexpectedly.</p>
+
+</article>
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2026 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

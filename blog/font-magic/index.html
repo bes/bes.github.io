@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+
+    
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://zkc.se/blog/font-magic/" />
+        <meta property="og:site_name" content="Domain Specific Language" />
+        <meta property="og:image" content="https://zkc.se/images/social.jpg"/>
+        <meta name="twitter:image" content="https://zkc.se/images/social.jpg"/>
+        <meta property="og:image:alt" content="zkc.se"/>
+        <meta name="fediverse:creator" content="@ezivkovic@hachyderm.io">
+    
+    
+    
+        <title>Font magic: Reducing the size of the web fonts I use —&nbsp;Domain Specific Language</title>
+        <meta name="twitter:title" content="Font magic: Reducing the size of the web fonts I use">
+        <meta property="og:title" content="Font magic: Reducing the size of the web fonts I use" />
+    
+    
+        <meta name="description" content="I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains a lot of glyphs that I don't need for this site. EB Garamond is going on a diet." />
+        <meta name="twitter:description" content="I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains a lot of glyphs that I don't need for this site. EB Garamond is going on a diet.">
+        <meta property="og:description" content="I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains a lot of glyphs that I don't need for this site. EB Garamond is going on a diet." />
+    
+
+
+    <link rel="me" href="https://hachyderm.io/@ezivkovic">
+
+    <link rel="stylesheet" href="https://zkc.se/main.css?h=1cdebe83f85b8f53e6ca">
+    
+    <link rel="stylesheet" href="https://zkc.se/giallo-dark.css" media="(prefers-color-scheme: dark)">
+    <link rel="stylesheet" href="https://zkc.se/giallo-light.css" media="(prefers-color-scheme: light)">
+    <link rel="alternate" type="application/atom+xml" title="Domain Specific Language Atom Feed" href="https://zkc.se/atom.xml" />
+
+    
+    
+</head>
+<body>
+    <div class="top-header">
+        <picture>
+            <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/images/background_dark-480.jpg 480w, /images/background_dark-768.jpg 768w, /images/background_dark-1280.jpg 1280w, /images/background_dark-2048.jpg 2048w"
+                sizes="100vw"
+            />
+
+            <img
+                src="/images/background-1280.jpg"
+                srcset="/images/background-480.jpg 480w, /images/background-768.jpg 768w, /images/background-1280.jpg 1280w, /images/background-2048.jpg 2048w"
+                sizes="100vw"
+                alt=""
+                fetchpriority="high"
+                class="top-header-img"
+            />
+        </picture>
+        <div class="top-items">
+            <div class="top-title">
+                Domain Specific Language
+            </div>
+            <div class="top-links">
+                <a href="https://zkc.se">Front page</a> · <a href="/blog">Blog</a> · <a href="/guides">Guides</a> · <a href="https://www.flickr.com/photos/besez" rel="noopener noreferrer">Photos</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <main id="main" tabindex="-1">
+            
+
+<article>
+<header>
+    <h1 class="title">
+        Font magic: Reducing the size of the web fonts I use
+    </h1>
+</header>
+
+    <div class="article-info">
+        
+        
+<div class="article-author-wrap">
+    <a href="/pages/about" class="article-author">
+        <img src="/images/erik_200x200.jpg" alt=""/>
+        <div class="article-author-block">
+            <div class="article-author-name">Erik Živković</div>
+            <div class="article-author-subtitle">Engineer, Tech Lead</div>
+        </div>
+    </a>
+</div>
+
+        
+        
+        <div class="article-date">14 January 2024 · 488 words</div>
+        
+        <div class="article-taxonomies">
+            
+                <ul class="article-categories">
+                    
+                    <li><a href="https://zkc.se/categories/software-development/">software development</a></li>
+                    
+                </ul>
+            
+            
+                <ul class="article-tags">
+                    
+                    <li><a href="https://zkc.se/tags/fonts/">fonts</a></li>
+                    
+                    <li><a href="https://zkc.se/tags/web/">web</a></li>
+                    
+                </ul>
+            
+        </div>
+    </div>
+
+
+    
+        <ol class="page-toc">
+            
+    
+    <li>
+        <a href="https://zkc.se/blog/font-magic/#setting-up-a-web-font">Setting up a web font</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/font-magic/#emoji-troubles">Emoji troubles</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/font-magic/#setting-up-a-venv-for-fonttools">Setting up a venv for fonttools</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/font-magic/#reducing-the-number-of-glyphs">Reducing the number of glyphs</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/font-magic/#results">Results</a>
+        
+    </li>
+    
+    <li>
+        <a href="https://zkc.se/blog/font-magic/#final-notes">Final notes</a>
+        
+    </li>
+    
+
+        </ol>
+    
+
+<p>I recently learned some new things about fonts! The good-looking variable EB Garamond font is almost one megabyte, but
+it contains <em>a lot</em> of glyphs that I don't need for this site. EB Garamond is going on a diet.</p>
+<span id="continue-reading"></span>
+<p>This was partially inspired by Cliffle's <a rel="external" href="https://cliffle.com/blog/making-website-faster">Making my website faster</a> post,
+specifically the <em>Reducing the cost of webfonts</em> section. I say partially because when I first started using EB Garamond
+and Josefin Sans, I thought they were both way too big. I searched for some options on how to shrink them, but at the
+time I wasn't feeling inspired to use Python (Python is a bit... much, at times).</p>
+<h1 id="setting-up-a-web-font">Setting up a web font</h1>
+<p>It's quite easy to set up web fonts, just download the ones you want, and then add them to your CSS file:</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="css"><span class="giallo-l"><span class="z-l-8 z-d-7">@</span><span class="z-l-8 z-d-7">font-face</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &#39;</span><span class="z-l-4 z-d-5">EBGaramond</span><span class="z-l-4 z-d-5">&#39;</span><span>;</span></span>
+<span class="giallo-l"><span>    font-style</span><span>:</span><span class="z-d-8"> normal</span><span>;</span></span>
+<span class="giallo-l"><span>    font-weight</span><span>:</span><span class="z-l-6 z-d-8"> 400</span><span>;</span></span>
+<span class="giallo-l"><span>    src</span><span>:</span><span class="z-l-2 z-d-1"> url</span><span>(</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">/fonts/EBGaramond.ttf</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span><span class="z-l-2 z-d-1"> format</span><span>(</span><span class="z-l-4 z-d-5">&#39;</span><span class="z-l-4 z-d-5">truetype</span><span class="z-l-4 z-d-5">&#39;</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>    unicode-range</span><span>:</span><span class="z-l-6 z-d-8"> U+0000</span><span class="z-l-6 z-d-8">-</span><span class="z-l-6 z-d-8">017F</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">@</span><span class="z-l-8 z-d-7">font-face</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &#39;</span><span class="z-l-4 z-d-5">JosefinSans</span><span class="z-l-4 z-d-5">&#39;</span><span>;</span></span>
+<span class="giallo-l"><span>    font-style</span><span>:</span><span class="z-d-8"> normal</span><span>;</span></span>
+<span class="giallo-l"><span>    font-weight</span><span>:</span><span class="z-l-6 z-d-8"> 600</span><span>;</span></span>
+<span class="giallo-l"><span>    src</span><span>:</span><span class="z-l-2 z-d-1"> url</span><span>(</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">/fonts/JosefinSans.ttf</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span><span class="z-l-2 z-d-1"> format</span><span>(</span><span class="z-l-4 z-d-5">&#39;</span><span class="z-l-4 z-d-5">truetype</span><span class="z-l-4 z-d-5">&#39;</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>    unicode-range</span><span>:</span><span class="z-l-6 z-d-8"> U+0000</span><span class="z-l-6 z-d-8">-</span><span class="z-l-6 z-d-8">017F</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-8 z-d-7">@</span><span class="z-l-8 z-d-7">font-face</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &#39;</span><span class="z-l-4 z-d-5">Source Code Pro</span><span class="z-l-4 z-d-5">&#39;</span><span>;</span></span>
+<span class="giallo-l"><span>    font-style</span><span>:</span><span class="z-d-8"> normal</span><span>;</span></span>
+<span class="giallo-l"><span>    font-weight</span><span>:</span><span class="z-d-8"> auto</span><span>;</span></span>
+<span class="giallo-l"><span>    src</span><span>:</span><span class="z-l-2 z-d-1"> url</span><span>(</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">/fonts/SourceCodePro.ttf</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span><span class="z-l-2 z-d-1"> format</span><span>(</span><span class="z-l-4 z-d-5">&#39;</span><span class="z-l-4 z-d-5">truetype</span><span class="z-l-4 z-d-5">&#39;</span><span>)</span><span>;</span></span>
+<span class="giallo-l"><span>    unicode-range</span><span>:</span><span class="z-l-6 z-d-8"> U+0000</span><span class="z-l-6 z-d-8">-</span><span class="z-l-6 z-d-8">017F</span><span>,</span><span class="z-l-6 z-d-8"> U+2500</span><span class="z-l-6 z-d-8">-</span><span class="z-l-6 z-d-8">25FF</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">html</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">EBGaramond</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span><span class="z-l-6 z-d-8"> serif</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">.</span><span class="z-l-6 z-d-8">top-title</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &quot;</span><span class="z-l-4 z-d-5">JosefinSans</span><span class="z-l-4 z-d-5">&quot;</span><span>,</span><span class="z-l-6 z-d-8"> sans-serif</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">code</span><span class="z-l-8">,</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">pre</span><span class="z-l-8">,</span></span>
+<span class="giallo-l"><span class="z-l-11 z-d-9">kbd</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &#39;</span><span class="z-l-4 z-d-5">Source Code Pro</span><span class="z-l-4 z-d-5">&#39;</span><span>,</span><span class="z-l-6 z-d-8"> monospace</span><span>;</span></span>
+<span class="giallo-l"><span>    line-height</span><span>:</span><span class="z-l-6 z-d-8"> 100</span><span class="z-l-6 z-d-9">%</span><span>;</span></span>
+<span class="giallo-l"><span>    word-wrap</span><span>:</span><span class="z-d-8"> break-word</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span>
+<span class="giallo-l"></span></code></pre><h1 id="emoji-troubles">Emoji troubles</h1>
+<p>The problem I found was that after applying EB Garamond, the emojis I was using around the site like these lovely flags
+🇸🇪🇬🇧🇺🇸🇭🇷🇧🇦🇷🇸🇩🇪 just stopped working. Instead I saw emoji placeholders like "S E G B U S H R B H R S D E", if that makes
+sense. The browser was trying to find an emoji inside of EB Garamond, but EB Garamond doesn't seem to have any emojis.</p>
+<p>To solve this, I had to select the unicode range I wanted to use from EB Garamond, and then fall back to <code>serif</code> or <code>sans-serif</code>
+for any other glyph, which is easy enough, just add the <code>unicode-range</code> propery of <code>@font-face</code>.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="css"><span class="giallo-l"><span class="z-l-8 z-d-7">@</span><span class="z-l-8 z-d-7">font-face</span><span> {</span></span>
+<span class="giallo-l"><span>    font-family</span><span>:</span><span class="z-l-4 z-d-5"> &#39;</span><span class="z-l-4 z-d-5">EBGaramond</span><span class="z-l-4 z-d-5">&#39;</span><span>;</span></span>
+<span class="giallo-l"><span>    font-style</span><span>:</span><span class="z-d-8"> normal</span><span>;</span></span>
+<span class="giallo-l"><span>    font-weight</span><span>:</span><span class="z-l-6 z-d-8"> 400</span><span>;</span></span>
+<span class="giallo-l"><span>    font-display</span><span>:</span><span class="z-d-8"> swap</span><span>;</span></span>
+<span class="giallo-l"><span>    src</span><span>:</span><span class="z-l-2 z-d-1"> url</span><span>(</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">/fonts/EBGaramond.ttf</span><span class="z-l-4 z-d-5">&quot;</span><span>)</span><span class="z-l-2 z-d-1"> format</span><span>(</span><span class="z-l-4 z-d-5">&#39;</span><span class="z-l-4 z-d-5">truetype</span><span class="z-l-4 z-d-5">&#39;</span><span>)</span><span>;</span></span>
+<span class="giallo-l z-l-hl z-d-hl"><span>    unicode-range</span><span>:</span><span class="z-l-6 z-d-8"> U+0000</span><span class="z-l-6 z-d-8">-</span><span class="z-l-6 z-d-8">017F</span><span>;</span></span>
+<span class="giallo-l"><span>}</span></span></code></pre>
+<p>I chose the range <code>U+0000-017F</code> because that's what I need. You can use the <a rel="external" href="https://symbl.cc/en/unicode/table/">symbl.cc Unicode Character Table</a>
+to find out which glyphs you might need. I chose <em>Basic Latin</em>, <em>Latin-1 Supplement</em>, and <em>Latin Extended-A</em> because together
+they cover the glyphs I use — the ones I need to spell my name — <em>Erik Živković</em>.</p>
+<h1 id="setting-up-a-venv-for-fonttools">Setting up a venv for fonttools</h1>
+<p>For a Python non-believer like me this might actually be the hardest part.</p>
+<p>My setup script <code>py-setup.sh</code> looks like this.</p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">#!</span><span class="z-l-7 z-l-i z-d-4 z-d-i">/bin/bash</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">python3</span><span class="z-l-6 z-d-8"> -</span><span class="z-l-6 z-d-8">m</span><span class="z-l-4 z-d-5"> venv</span><span class="z-l-4 z-d-5"> .venv</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">source</span><span class="z-l-4 z-d-5"> .venv/bin/activate</span></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">pip3</span><span class="z-l-4 z-d-5"> install</span><span class="z-l-4 z-d-5"> fonttools</span></span></code></pre><h1 id="reducing-the-number-of-glyphs">Reducing the number of glyphs</h1>
+<p>To reduce the number of glyphs I ran this script, adapted from Cliffle's blog, that I call <code>py-fixfonts.sh</code></p>
+<pre class="giallo z-l-code z-d-code" ><code data-lang="shellscript"><span class="giallo-l"><span class="z-l-7 z-l-i z-d-4 z-d-i">#!</span><span class="z-l-7 z-l-i z-d-4 z-d-i">/bin/bash</span></span>
+<span class="giallo-l"><span class="z-l-2 z-d-1">source</span><span class="z-l-4 z-d-5"> .venv/bin/activate</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">pyftsubset</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-4 z-d-5">    font-orig/EB_Garamond/EBGaramond-VariableFont_wght.ttf</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-unicodes=</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">U+0000-017F</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-ignore-missing-glyphs</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-layout-features-=dnom,frac,numr</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-output-file=static/fonts/EBGaramond.ttf</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">pyftsubset</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-4 z-d-5">    font-orig/Josefin_Sans/JosefinSans-VariableFont_wght.ttf</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-text=</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">Domain Specific Language Front page · Blog · Photos</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-ignore-missing-glyphs</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-layout-features-=dnom,frac,numr</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-output-file=static/fonts/JosefinSans.ttf</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span class="z-l-3 z-d-3">pyftsubset</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-4 z-d-5">    font-orig/SourceCodePro/TTF/SourceCodePro-Regular.ttf</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-unicodes=</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-4 z-d-5">U+0000-017F,U+2500-25FF</span><span class="z-l-4 z-d-5">&quot;</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-ignore-missing-glyphs</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-layout-features-=dnom,frac,numr</span><span class="z-l-2 z-d-1"> \</span></span>
+<span class="giallo-l"><span class="z-l-6 z-d-8">    -</span><span class="z-l-6 z-d-8">-output-file=static/fonts/SourceCodePro.ttf</span></span></code></pre>
+<p>The Josefin Sans fonts is only used for the page title and the section links, so I tell <code>pyftsubset</code> to only keep the
+glyphs needed for exactly those texts.</p>
+<h1 id="results">Results</h1>
+<p>The table below says it all, size for the EB Garamond font was reduced to about 10% of its original size, and
+Josefin Sans too was reduced to a similar percentage of the original.</p>
+<div class="hscroll">
+<table><thead><tr><th>Font</th><th>Size before</th><th>Size After</th></tr></thead><tbody>
+<tr><td>EBGaramond-VariableFont_wght.ttf</td><td>927 kB</td><td>95 kB</td></tr>
+<tr><td>JosefinSans-VariableFont_wght.ttf</td><td>118 kB</td><td>10 kB</td></tr>
+<tr><td>SourceCodePro-Regular.ttf</td><td>205 kB</td><td>57 kB</td></tr>
+</tbody></table>
+</div>
+<h1 id="final-notes">Final notes</h1>
+<p>I assume the <code>unicode-range</code> property could be removed at this point, but I'll keep it around anyway, since I think
+it's cute.</p>
+
+</article>
+
+        </main>
+        <footer>
+            <p class="bottom-links">
+                <a target="_blank" rel="noopener noreferrer" href="mailto:erik@zivkovic.se">erik@zivkovic.se</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://hachyderm.io/@ezivkovic">@ezivkovic@hachyderm.io</a> ·
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/bes">@bes</a> ·
+                <a href="/atom.xml">atom/rss</a>
+            </p>
+            <p>
+                I do not consent to my writing, images, or other art being used without attribution.
+            </p>
+            <p>
+                Copyright 2015&ndash;2026 Erik Živković
+            </p>
+            <p>
+                
+                
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
